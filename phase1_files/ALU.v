@@ -9,6 +9,25 @@ module ALU (
     	//wire results
     	wire [15:0] xor_result, sll_result, sra_result, ror_result, paddsb_result, red_result;
     	
+	//TODO: ADD/SUB - ALREADY MADE RIPPLE ADDER CAN BE USED AGAIN FOR THIS ONE
+	//TODO: Implement saturation - not difficult, if theres overflow saturate to most pos or most neg
+	add_sub add_unit (
+		.A(ALU_In1),
+		.B(ALU_In2),
+		.sub(1'd0).
+		.Sum(ALU_Out),
+		.Ovfl(V)
+
+	);
+
+	add_sub sub_unit (
+		.A(ALU_In1),
+		.B(ALU_In2),
+		.sub(1'd1).
+		.Sum(ALU_Out),
+		.Ovfl(V)
+
+	);
 
     	//TODO: CLA implementation (New Modules needed?)
 
@@ -16,7 +35,12 @@ module ALU (
     	assign xor_result = ALU_In1 ^ ALU_In2;
 
     	//TODO: PADDSB (Parallel Add Saturation Byte-wise)
-    
+    	PADDSB_16 PADDSB(
+		.A(ALU_In1),
+		.B(ALU_In2),
+		.Sum(ALU_Out),
+		.Error(V)
+	);
 
     
 
