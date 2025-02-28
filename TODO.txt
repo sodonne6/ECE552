@@ -1,0 +1,1 @@
+To make the workload more transparent will we split the work into different parts? I am happy to work more on the ALU and sub modules. for the other parts feel free to use my PC_control for homework 5. Its not tested yet but pretty sure its good
