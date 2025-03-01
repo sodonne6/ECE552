@@ -15,7 +15,7 @@ module ALU (
 	add_sub_16 add_unit (
 		.A(ALU_In1),
 		.B(ALU_In2),
-		.sub(Opcode[0]).
+		.sub(Opcode[0]),
 		.Sum(add_result),
 		.Ovfl(V)
 
@@ -34,7 +34,7 @@ module ALU (
 	);
 	*/
     	//TODO: XOR - DONE?
-	assign xor_result = (ALU_In1 ^ ALU_In);
+	assign xor_result = (ALU_In1 ^ ALU_In2);
 
    
 
@@ -80,7 +80,7 @@ module ALU (
         	case (Opcode)
             //TODO: CONNECT WIRES HOLDING VALUES TO OPCODE
 			4'b0000, 4'b0001: begin  //add or sub - based on bit 0 of opcode - if Opcode[0] == 0 -> add 
-                		ALU_Out = alu_result; //output solution
+                		ALU_Out = add_result; //output solution
                 		//implement V flag
 			end
 			4'b0010: begin
@@ -101,22 +101,6 @@ module ALU (
 			4'b0111: begin
 				ALU_Out = paddsb_result;
 			end
-			4'b1000: begin
-				//lw logic?
-			end
-			4'b1001: begin
-				//sw logic
-			end
-			4'1010: begin
-				//llb logic
-			end
-			4'b1011: begin
-				//lhb logic
-			end
-			4'b1100: begin 
-				//B logic
-			end
-			
         	endcase
 
         	//if ALU_Out is 0 set Z to 1
