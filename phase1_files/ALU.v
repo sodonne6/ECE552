@@ -8,6 +8,7 @@ module ALU (
 	//ALL SUBMODULE HAVE BEEN MADE NOW NEED TO CONNECT
     	//wire results
     	wire [15:0] xor_result, shft_result, paddsb_result, red_result,add_result;
+	wire Ovfl_addsub
     	
 	//TODO: ADD/SUB - ALREADY MADE RIPPLE ADDER CAN BE USED AGAIN FOR THIS ONE
 	//TODO: Implement saturation - not difficult, if theres overflow saturate to most pos or most neg
@@ -17,7 +18,7 @@ module ALU (
 		.B(ALU_In2),
 		.sub(Opcode[0]),
 		.Sum(add_result),
-		.Ovfl(V)
+		.Ovfl(Ovfl_addsub) //use a wire instead in the case V need to be assigned to any other modules so depending on the opcode the correct V is outputtted
 
 	);
 	
@@ -61,6 +62,7 @@ module ALU (
 			end
 			4'b0010: begin
 				ALU_Out = xor_result;
+				V = Ovfl_add_sub;
 			end
 			4'b0011: begin
 				ALU_Out = red_result;
