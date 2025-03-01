@@ -8,22 +8,22 @@ module RED (
     	wire [6:0] sum01, sum23, total_sum; //intermediate wires for addition
 
     	//aaaa+eeee
-    	addsub_4bit ADD_BYTE_0 (
+    	add_sub_4 ADD_BYTE_0 (
         	.A(a[15:12]), .B(b[15:12]), .sub(1'b0),
         	.Sum(sum0[3:0]), .Ovfl(sum0[4])
     	);
 	//bbbb+ffff
-    	addsub_4bit ADD_BYTE_1 (
+    	add_sub_4 ADD_BYTE_1 (
         	.A(a[11:8]), .B(b[11:8]), .sub(1'b0),
         	.Sum(sum1[3:0]), .Ovfl(sum1[4])
     	);
 	//cccc+gggg
-    	addsub_4bit ADD_BYTE_2 (
+    	add_sub_4 ADD_BYTE_2 (
         	.A(a[7:4]), .B(b[7:4]), .sub(1'b0),
         	.Sum(sum2[3:0]), .Ovfl(sum2[4])
     	);
 	//dddd+hhhh
-    	addsub_4bit ADD_BYTE_3 (
+    	add_sub_4 ADD_BYTE_3 (
         	.A(a[3:0]), .B(b[3:0]), .sub(1'b0),
         	.Sum(sum3[3:0]), .Ovfl(sum3[4])
     	);
