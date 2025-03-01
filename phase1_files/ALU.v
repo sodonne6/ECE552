@@ -53,12 +53,11 @@ module ALU (
         	case (Opcode)
             //TODO: CONNECT WIRES HOLDING VALUES TO OPCODE
 			4'b0000, 4'b0001: begin  //add or sub - based on bit 0 of opcode - if Opcode[0] == 0 -> add 
-                		ALU_Out = add_result; //output solution
-                		//implement V flag
+                		ALU_Out = addsub_result;
 			end
 			4'b0010: begin
 				ALU_Out = xor_result;
-				V = Ovfl_add_sub;
+				V = Ovfl_addsub;
 			end
 			4'b0011: begin
 				ALU_Out = red_result;
