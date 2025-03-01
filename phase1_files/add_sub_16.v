@@ -1,3 +1,5 @@
+//I MADE AN OOPSIE DONT USE THIS MODULE
+
 module add_sub_16 (
     	input [15:0] A, B,   // 4-bit Inputs
     	input sub,          // 0 = Add, 1 = Subtract
