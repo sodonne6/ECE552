@@ -17,21 +17,18 @@ module control_unit (
     output memRead,            
     output memWrite,           
     
-    // Branch control signals
-    output branch,             // Branch instruction
-    output branchReg,          // Branch to register value
-    output jumpAndLink,        // PCS instruction
-    output halt,               // HLT instruction
+    output branch,          
+    output branchReg,        
+    output jumpAndLink,        
+    output halt,               
     
-    // Immediate value for operations
     output [15:0] immediate,
     
-    // Special operation signals
     output llb,                // Load Lower Byte
     output lhb                 // Load Higher Byte
 );
 
-    // Instruction field extraction
+    // instruction field 
     wire [3:0] opcode;
     wire [3:0] rd;
     wire [3:0] rs;
@@ -42,15 +39,15 @@ module control_unit (
     wire [8:0] offset9;
     wire [3:0] offset4;
     
-    // Opcodes
+    // opcodes
     wire isADD, isSUB, isXOR, isRED, isSLL, isSRA, isROR, isPADDSB;
     wire isLW, isSW, isLLB, isLHB, isB, isBR, isPCS, isHLT;
     
-    // Branch condition evaluation
+    // branch condition eval
     wire neq_cond, eq_cond, gt_cond, lt_cond, gte_cond, lte_cond, ovfl_cond, uncond_cond;
     wire branch_taken;
     
-    // Extract instruction fields
+    // get instrcution fields
     assign opcode = instr[15:12];
     assign rd = instr[11:8];
     assign rs = instr[7:4];
@@ -79,7 +76,7 @@ module control_unit (
     assign isPCS = (opcode == 4'b1110);
     assign isHLT = (opcode == 4'b1111);
     
-    // Branch condition evaluation
+    // branch condition eval
     assign neq_cond = ~z_flag;
     assign eq_cond = z_flag;
     assign gt_cond = ~z_flag & ~n_flag;
@@ -89,7 +86,7 @@ module control_unit (
     assign ovfl_cond = v_flag;
     assign uncond_cond = 1'b1;
     
-    // Branch condition multiplexer
+    // branch condition multiplexer
     wire cond_result;
     assign cond_result = (cond == 3'b000) ? neq_cond :
                          (cond == 3'b001) ? eq_cond :
@@ -100,35 +97,35 @@ module control_unit (
                          (cond == 3'b110) ? ovfl_cond :
                          uncond_cond;
     
-    // Set control signals for each instruction type
-    // Register control signals
+    // set ctrl sigs for each instruction type
+    // reg ctrl sigs
     assign srcReg1 = rs;
     assign srcReg2 = (isLW | isSW) ? rt : rt;
     assign dstReg = (isLW) ? rt : rd;
     assign regWrite = isADD | isSUB | isXOR | isRED | isSLL | isSRA | 
                      isROR | isPADDSB | isLW | isLLB | isLHB | isPCS;
     
-    // ALU control signals
+    // ALU ctrl sigs
     assign aluOp = opcode;
     assign aluSrc = isSLL | isSRA | isROR | isLW | isSW;
     
-    // Memory control signals
+    // mem ctrl sigs
     assign memRead = isLW;
     assign memWrite = isSW;
     
-    // Branch control signals
+    // branch ctrl signals
     assign branch = isB & cond_result;
     assign branchReg = isBR & cond_result;
     assign jumpAndLink = isPCS;
     assign halt = isHLT;
     
-    // Immediate generation
+    // immediate gen
     wire [15:0] sll_imm, sra_imm, ror_imm;
     wire [15:0] lw_imm, sw_imm;
     wire [15:0] llb_imm, lhb_imm;
     wire [15:0] b_imm;
     
-    // Zero-extend shift immediate values
+    // zero-extend shift imediate values
     assign sll_imm = {12'b0, imm4};
     assign sra_imm = {12'b0, imm4};
     assign ror_imm = {12'b0, imm4};
