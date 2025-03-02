@@ -42,7 +42,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign pcInput = (Branch&z)? branchALUresult:pcp4;
 	
-	memory1c instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
+	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
 	assign halfByteLoad = {lhb?instruction[7:0]:RReadData1[15:8],llb?instruction[7:0]:RReadData1[7:0]};
 	
