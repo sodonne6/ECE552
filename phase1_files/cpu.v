@@ -12,18 +12,27 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire z,n,v;//ALU flags
 	wire [15:0] pcp4, pcInput, branchALUresult;//pc +4, pc Input for pc flip flop, result after branch
 	wire ovflpc,ovflpc2;
-	
+	wire llb, lhb;
+	wire [3:0] cusrcReg1,cusrcReg2,cudstReg;//control unit signals for register file inputs
+	wire jumpAndLink, BranchReg;
+	wire rst;
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
-	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst());
-	add_sub_16 pcp4adder(
+	//TODO: look at rst_n mechanics, LLB,LHB don't do anything rn
+	assign rst = ~rst_n;
+	//pc flip flop
+	
+	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
+	
+	add_sub_16 pcp4adder(//add 2 to pc
 		.A(pc), .B(16'h0002),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(pcp4),
 		.Ovfl(ovflpc)//don't care);
 		);
-	add_sub_16 branchAdder(
-		.A(pcp4), .B({immediate[14:1],1'b0}),
+		
+	add_sub_16 branchAdder(//compute pc+2 + offset
+		.A(pcp4), .B({SEImm[14:1],1'b0}),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(branchALUresult),
 		.Ovfl(ovflpc2)//don't care);
@@ -31,13 +40,14 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign pcInput = (Branch&z)? branchALUresult:pcp4;
 	
+	memory1c instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
 	
-	RegWriteData = MemtoReg? MReadData:ALU_Out;//are we loading from memory?
+	assign RegWriteData = MemtoReg? MReadData:ALU_Out;//are we loading from memory?
 	assign WriteReg = RegDst? rt:rs;//for the instruction what is the destination register
 	RegisterFile rf(
     .clk(clk),
-    .rst(),
+    .rst(rst),
     .SrcReg1(rd),
     .SrcReg2(rs),
     .DstReg(WriteReg),
@@ -47,22 +57,22 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .SrcData2(RReadData2)
 );
 	
-	assign ALUin2 = ALUSrc? :RReadData2
+	assign ALUin2 = ALUSrc? SEImm:RReadData2;
 	ALU iALU(
     	.ALU_In1(ReadData1), .ALU_In2(ALUin2),  
-    	.Opcode(),            
-    	.Shamt(),             
+    	.Opcode(aluOp),            
+    	.Shamt(rt),             
     	.ALU_Out(ALU_Out),     
     	 .Z(z), .N(n), .V(v));
-	module control_unit (
+	control_unit (
     .instr(instruction),        
     .z_flag(z),              
     .v_flag(v),              // overflow 
     .n_flag(n),              
     
-    .srcReg1(),      
-    .srcReg2(),      
-	.dstReg(),       
+    .srcReg1(cusrcReg1),      
+    .srcReg2(cusrcReg2),      
+	.dstReg(cudstReg),       
 	.regWrite(RegWrite),           
     
 	.aluOp(ALUOp),        
@@ -72,17 +82,17 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .memWrite(MemWrite),           
     
     .branch(Branch),          
-    .branchReg(),        
-    .jumpAndLink(),        
-	.halt(),               
+    .branchReg(BranchReg),        
+    .jumpAndLink(jumpAndLink),        
+	.halt(halt),               
  
 	.immediate(SEImm),
     
-    .llb(),                // Load Lower Byte
-	.lhb()
+    .llb(llb),                // Load Lower Byte
+	.lhb(lhb)
 );
 	assign dataMemEn = MemWrite|MemRead;
-	memory1c dataMem(.data_out(MReadData), .data_in(MWriteData), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst());
+	memory1c dataMem(.data_out(MReadData), .data_in(MWriteData), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
 
 endmodule
