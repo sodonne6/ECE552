@@ -16,6 +16,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [3:0] cusrcReg1,cusrcReg2,cudstReg;//control unit signals for register file inputs
 	wire jumpAndLink, BranchReg;
 	wire rst;
+	wire [15:0] halfByteLoad;
+	
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
 	//TODO: look at rst_n mechanics, LLB,LHB don't do anything rn
@@ -42,8 +44,15 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	memory1c instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
+	assign halfByteLoad = {lhb?instruction[7:0]:RReadData1[15:8],llb?instruction[7:0]:RReadData1[7:0]};
 	
-	assign RegWriteData = MemtoReg? MReadData:ALU_Out;//are we loading from memory?
+	
+	assign RegWriteData = (lhb|llb)?
+		halfByteLoad
+		:MemtoReg? MReadData:ALU_Out;//are we loading from memory?
+	
+	
+	
 	assign WriteReg = RegDst? rt:rs;//for the instruction what is the destination register
 	RegisterFile rf(
     .clk(clk),
@@ -64,7 +73,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.Shamt(rt),             
     	.ALU_Out(ALU_Out),     
     	 .Z(z), .N(n), .V(v));
-	control_unit (
+		 
+		 //control unit
+	control_unit CU(
     .instr(instruction),        
     .z_flag(z),              
     .v_flag(v),              // overflow 

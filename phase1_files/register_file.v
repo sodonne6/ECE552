@@ -83,8 +83,8 @@ module RegisterFile(
             );
     
     //hard code register 0 to 0
-    bitlines1[0] = 16'b0;
-    bitlines2[0] = 16'b0;
+    assign bitlines1[0] = 16'b0;
+    assign bitlines2[0] = 16'b0;
     
     assign SrcData1 = (WriteReg && (SrcReg1 == DstReg)) ? DstData : bitlines1[SrcReg1];
     assign SrcData2 = (WriteReg && (SrcReg2 == DstReg)) ? DstData : bitlines2[SrcReg2];
