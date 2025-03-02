@@ -1,4 +1,4 @@
-module addsub_4bit(
+module add_sub_4(
     input [3:0] A, B,
     input Cin,
     output [3:0] Sum,
