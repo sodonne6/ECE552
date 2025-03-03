@@ -64,8 +64,8 @@ module RegisterFile(
     inout [15:0] SrcData2
 );
     wire [15:0] read1_enable, read2_enable, write_enable;
-    wire [15:0] bitlines1;// [15:0];
-    wire [15:0] bitlines2;// [15:0];
+    wire [15:0] bitlines1 ;//[15:0];
+    wire [15:0] bitlines2;//[15:0];
     
     ReadDecoder_4_16 read_decoder1(.RegId(SrcReg1), .Wordline(read1_enable));
     ReadDecoder_4_16 read_decoder2(.RegId(SrcReg2), .Wordline(read2_enable));
@@ -83,11 +83,11 @@ module RegisterFile(
             );
     
     //hard code register 0 to 0
-    assign bitlines1[0] = 16'b0;
-    assign bitlines2[0] = 16'b0;
+    //assign bitlines1[0] = 16'b0;
+    //assign bitlines2[0] = 16'b0;
     
-    assign SrcData1 = (WriteReg && (SrcReg1 == DstReg)) ? DstData : bitlines1[SrcReg1];
-    assign SrcData2 = (WriteReg && (SrcReg2 == DstReg)) ? DstData : bitlines2[SrcReg2];
+    assign SrcData1 = bitlines1;//(WriteReg && (SrcReg1 == DstReg)) ? DstData : bitlines1[SrcReg1];
+    assign SrcData2 = bitlines2;//(WriteReg && (SrcReg2 == DstReg)) ? DstData : bitlines2[SrcReg2];
 endmodule
 
 module dff (q, d, wen, clk, rst);

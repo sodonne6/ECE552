@@ -17,7 +17,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [3:0] cusrcReg1,cusrcReg2,cudstReg;//control unit signals for register file inputs
 	wire jumpAndLink, BranchReg;
 	wire rst;
-	wire [15:0] halfByteLoad;
+	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
 	
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
@@ -45,11 +45,11 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
-	assign halfByteLoad = {lhb?instruction[7:0]:RReadData1[15:8],llb?instruction[7:0]:RReadData1[7:0]};
+	assign highByteLoad ={instruction[7:0],RReadData2[7:0]} ;
+	assign lowByteLoad ={RReadData2[15:8],instruction[7:0]};
 	
-	
-	assign RegWriteData = (lhb|llb)?
-		16'h0000//halfByteLoad
+	assign RegWriteData = lhb?highByteLoad
+		:llb? lowByteLoad
 		:MemtoReg? MReadData:ALU_Out;//are we loading from memory?
 	
 	
