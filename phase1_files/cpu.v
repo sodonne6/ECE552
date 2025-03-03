@@ -1,6 +1,7 @@
 module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
-	wire RegDst,Branch,MemRead,MemtoReg,ALUOp, MemWrite,ALUSrc,RegWrite;//control signals
+	wire RegDst,Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals
+	wire [3:0] ALUOp;
 	wire [15:0] RReadData1,RReadData2,MReadData,MWriteData,ALUin2;// register outputs, data mem outputs, and intermediate signal for ALU input
 	wire[15:0] ALU_Out;//output of central ALU
 	wire[15:0] instruction;//Current instruction
@@ -34,7 +35,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 		
 	add_sub_16 branchAdder(//compute pc+2 + offset
-		.A(pcp4), .B({SEImm[14:1],1'b0}),
+		.A(pcp4), .B({SEImm[14:0],1'b0}),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(branchALUresult),
 		.Ovfl(ovflpc2)//don't care);
@@ -68,8 +69,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign ALUin2 = ALUSrc? SEImm:RReadData2;
 	ALU iALU(
-    	.ALU_In1(ReadData1), .ALU_In2(ALUin2),  
-    	.Opcode(aluOp),            
+    	.ALU_In1(RReadData1), .ALU_In2(ALUin2),  
+    	.Opcode(ALUOp),            
     	.Shamt(rt),             
     	.ALU_Out(ALU_Out),     
     	 .Z(z), .N(n), .V(v));

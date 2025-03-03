@@ -71,7 +71,7 @@ module RegisterFile(
     ReadDecoder_4_16 read_decoder2(.RegId(SrcReg2), .Wordline(read2_enable));
     WriteDecoder_4_16 write_decoder(.RegId(DstReg), .WriteReg(WriteReg), .Wordline(write_enable));
     
-    Register reg_inst[15:1](
+    Register reg_inst[15:0](
                 .clk(clk),
                 .rst(rst),
                 .D(DstData),

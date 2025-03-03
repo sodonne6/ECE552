@@ -17,7 +17,7 @@ module cpu_tb();
         
    integer     inst_count;
    integer     cycle_count;
-
+	
    integer     trace_file;
    integer     sim_log_file;
 
@@ -26,7 +26,7 @@ module cpu_tb();
 
      
 
-   cpu DUT(.clk(clk), .rst_n(rst_n), .pc_out(PC), .hlt(Halt)); /* Instantiate your processor */
+   cpu DUT(.clk(clk), .rst_n(rst_n), .pc(PC), .hlt(Halt)); /* Instantiate your processor */
    
 
 
@@ -68,7 +68,8 @@ module cpu_tb();
     	cycle_count = cycle_count + 1;
 	if (cycle_count > 100000) begin
 		$display("hmm....more than 100000 cycles of simulation...error?\n");
-		$finish;
+		$stop;
+		//$finish;
 	end
     end
 
@@ -154,7 +155,7 @@ module cpu_tb();
    // names on the right hand side
     
 //   assign PC = DUT.fetch0.pcCurrent; //You won't need this because it's part of the main cpu interface
-   assign Inst = DUT.fetch0.instr;
+   /*assign Inst = DUT.fetch0.instr;
    
    assign RegWrite = DUT.decode0.regFile0.write;
    // Is memory being read, one bit signal (1 means yes, 0 means no)

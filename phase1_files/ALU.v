@@ -8,7 +8,7 @@ module ALU (
 	//ALL SUBMODULE HAVE BEEN MADE NOW NEED TO CONNECT
     	//wire results
     	wire [15:0] xor_result, shft_result, paddsb_result, red_result,add_result;
-	wire Ovfl_addsub
+	wire Ovfl_addsub;
     	
 	add_sub_16 add_unit (
 		.A(ALU_In1),
@@ -24,7 +24,7 @@ module ALU (
    
 
     	//TODO: PADDSB - saturation added - DONE?
-    	PADDSB_16 PADDSB(
+    	PSA_16bit PADDSB(
 		.A(ALU_In1),
 		.B(ALU_In2),
 		.Sum(paddsb_result),
@@ -53,7 +53,7 @@ module ALU (
         	case (Opcode)
             //TODO: CONNECT WIRES HOLDING VALUES TO OPCODE
 			4'b0000, 4'b0001: begin  //add or sub - based on bit 0 of opcode - if Opcode[0] == 0 -> add 
-                		ALU_Out = addsub_result;
+                		ALU_Out = add_result;
 			end
 			4'b0010: begin
 				ALU_Out = xor_result;
