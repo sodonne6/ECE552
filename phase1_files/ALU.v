@@ -51,6 +51,7 @@ module ALU (
 
     	always @(*) begin
         	case (Opcode)
+			
             //TODO: CONNECT WIRES HOLDING VALUES TO OPCODE
 			4'b0000, 4'b0001: begin  //add or sub - based on bit 0 of opcode - if Opcode[0] == 0 -> add 
                 		ALU_Out = add_result;
@@ -61,24 +62,34 @@ module ALU (
 			end
 			4'b0011: begin
 				ALU_Out = red_result;
+				V = 0;
 			end
 			4'b0100: begin
 				ALU_Out = shft_result;
+				V = 0;
 			end
 			4'b0101: begin
 				ALU_Out = shft_result;
+				V = 0;
 			end
 			4'b0110: begin
 				ALU_Out = shft_result;
+				V = 0;
 			end
 			4'b0111: begin
 				ALU_Out = paddsb_result;
+				V = 0;
+			end
+			default: begin
+				ALU_Out = add_result;
+				V = Ovfl_addsub;
 			end
         	endcase
 
         	//if ALU_Out is 0 set Z to 1
         	Z = (ALU_Out == 16'b0) ? 1 : 0;
         	N = ALU_Out[15]; //MSB represents negative or positive (2's complement)
+			
     	end
 
 endmodule

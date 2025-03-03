@@ -24,7 +24,7 @@ module memory1c_instr (data_out, data_in, addr, enable, wr, clk, rst);//memory f
       if (rst) begin
          //load loadfile_all.img
          if (!loaded) begin
-            $readmemh("test1binary.txt", mem);
+            $readmemh("sw.txt", mem);
             loaded = 1;
          end
           

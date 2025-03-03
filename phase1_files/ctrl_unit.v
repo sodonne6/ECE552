@@ -100,7 +100,7 @@ module control_unit (
     // set ctrl sigs for each instruction type
     // reg ctrl sigs
     assign srcReg1 = rs;
-    assign srcReg2 = (isLLB | isLHB) ? rd : rt;
+    assign srcReg2 = (isLLB | isLHB|isLW|isSW) ? rd : rt;
     assign dstReg = (isLW) ? rt : rd;
     assign regWrite = isADD | isSUB | isXOR | isRED | isSLL | isSRA | 
                      isROR | isPADDSB | isLW | isLLB | isLHB | isPCS;
