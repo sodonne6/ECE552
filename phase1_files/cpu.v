@@ -1,8 +1,8 @@
 module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
-	wire RegDst,Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals
+	wire Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals
 	wire [3:0] ALUOp;
-	wire [15:0] RReadData1,RReadData2,MReadData,MWriteData,ALUin2;// register outputs, data mem outputs, and intermediate signal for ALU input
+	wire [15:0] RReadData1,RReadData2,MReadData,ALUin2;// register outputs, data mem outputs, and intermediate signal for ALU input
 	wire[15:0] ALU_Out;//output of central ALU
 	wire[15:0] instruction;//Current instruction
 	wire [15:0] SEImm;//sign extended immediate
@@ -21,7 +21,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
-	//TODO: look at rst_n mechanics, LLB,LHB don't do anything rn
+	//TODO: look at rst_n mechanics,
 	assign rst = ~rst_n;
 	//pc flip flop
 	
@@ -49,17 +49,17 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	
 	assign RegWriteData = (lhb|llb)?
-		halfByteLoad
+		16'h0000//halfByteLoad
 		:MemtoReg? MReadData:ALU_Out;//are we loading from memory?
 	
 	
 	
-	assign WriteReg = RegDst? rt:rs;//for the instruction what is the destination register
+	//assign WriteReg = RegDst? rt:rs;//for the instruction what is the destination register
 	RegisterFile rf(
     .clk(clk),
     .rst(rst),
-    .SrcReg1(rd),
-    .SrcReg2(rs),
+    .SrcReg1(cusrcReg1),
+    .SrcReg2(cusrcReg2),
     .DstReg(WriteReg),
     .WriteReg(RegWrite),
     .DstData(RegWriteData),
@@ -84,7 +84,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     
     .srcReg1(cusrcReg1),      
     .srcReg2(cusrcReg2),      
-	.dstReg(cudstReg),       
+	.dstReg(WriteReg),       
 	.regWrite(RegWrite),           
     
 	.aluOp(ALUOp),        
@@ -96,15 +96,16 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .branch(Branch),          
     .branchReg(BranchReg),        
     .jumpAndLink(jumpAndLink),        
-	.halt(halt),               
+	.halt(hlt),               
  
 	.immediate(SEImm),
     
     .llb(llb),                // Load Lower Byte
 	.lhb(lhb)
 );
+	assign MemtoReg = MemRead;
 	assign dataMemEn = MemWrite|MemRead;
-	memory1c dataMem(.data_out(MReadData), .data_in(MWriteData), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
-
+	
+	memory1c dataMem(.data_out(MReadData), .data_in(RReadData2), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
 endmodule

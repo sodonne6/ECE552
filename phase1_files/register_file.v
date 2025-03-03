@@ -64,8 +64,8 @@ module RegisterFile(
     inout [15:0] SrcData2
 );
     wire [15:0] read1_enable, read2_enable, write_enable;
-    wire [15:0] bitlines1 [15:0];
-    wire [15:0] bitlines2 [15:0];
+    wire [15:0] bitlines1;// [15:0];
+    wire [15:0] bitlines2;// [15:0];
     
     ReadDecoder_4_16 read_decoder1(.RegId(SrcReg1), .Wordline(read1_enable));
     ReadDecoder_4_16 read_decoder2(.RegId(SrcReg2), .Wordline(read2_enable));

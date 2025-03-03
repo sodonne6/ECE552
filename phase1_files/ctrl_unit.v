@@ -129,7 +129,7 @@ module control_unit (
     assign sll_imm = {12'b0, imm4};
     assign sra_imm = {12'b0, imm4};
     assign ror_imm = {12'b0, imm4};
-   
+  
     // sign-extend and shift offset for mem ops
     // lw/sw ===> offset is sign-extended and shifted left by 1
     assign lw_imm = {{11{offset4[3]}}, offset4, 1'b0};
@@ -140,7 +140,7 @@ module control_unit (
     
     // B instruction, 9-bit offset is sign-extended and shifted left by 1
     assign b_imm = {{6{offset9[8]}}, offset9, 1'b0};
-    
+     
     // immediate multiplexer
     assign immediate = (isSLL) ? sll_imm :
                        (isSRA) ? sra_imm :
@@ -153,5 +153,6 @@ module control_unit (
     
     assign llb = isLLB;
     assign lhb = isLHB;
-
+	
+   
 endmodule
