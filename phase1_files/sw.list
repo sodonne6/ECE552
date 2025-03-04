@@ -3,5 +3,6 @@
 	LLB R2, 0x11
 	LHB R2, 0x11
 	SW R1, R2, 4
+	SW R2, R2, 0
 	LW R3, R2, 4
 	HLT

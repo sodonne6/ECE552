@@ -13,7 +13,7 @@ module ALU (
 	add_sub_16 add_unit (
 		.A(ALU_In1),
 		.B(ALU_In2),
-		.sub(Opcode[0]&(|(4'b1001^opcode))),//don't subtract for SW
+		.sub(Opcode[0]&(Opcode != 4'b1001)),//don't subtract for SW
 		.Sum(add_result),
 		.Ovfl(Ovfl_addsub) //use a wire instead in the case V need to be assigned to any other modules so depending on the opcode the correct V is outputtted
 	);
