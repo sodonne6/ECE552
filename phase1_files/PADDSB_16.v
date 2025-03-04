@@ -8,18 +8,10 @@ module PSA_16bit (Sum, Error, A, B);
 	wire ovf3,ovf2,ovf1,ovf0;
 
 
-	/*
-	//break input into 4 bit values and add using 4 bit ripple adder 
-	addsub_4bit s0 (.A(A[3:0]), .B(B[3:0]), .sub(0), .Sum(sum0), .Ovfl(ovf0));
-	addsub_4bit s1 (.A(A[7:4]), .B(B[7:4]), .sub(0), .Sum(sum1), .Ovfl(ovf1));
-	addsub_4bit s2 (.A(A[11:8]), .B(B[11:8]), .sub(0),  .Sum(sum2), .Ovfl(ovf2));
-	addsub_4bit s3 (.A(A[15:12]), .B(B[15:12]), .sub(0), .Sum(sum3), .Ovfl(ovf3));
-	*/
-
-	add_sub_4 s0 (.A(A[3:0]), .B(B[3:0]), .Cin(1'b0), .Sum(sum0), .Ovfl(ovfl0), .Cout(), .PG(), .GG());
-	add_sub_4 s1 (.A(A[7:4]), .B(B[7:4]), .Cin(1'b0), .Sum(sum1), .Ovfl(ovfl1), .Cout(), .PG(), .GG());
-	add_sub_4 s2 (.A(A[11:8]), .B(B[11:8]), .Cin(1'b0), .Sum(sum0), .Ovfl(ovfl2), .Cout(), .PG(), .GG());
-	add_sub_4 s3 (.A(A[15:12]), .B(B[15:12]), .Cin(1'b0), .Sum(sum0), .Ovfl(ovfl3), .Cout(), .PG(), .GG());
+	add_sub_4 s0 (.A(A[3:0]), .B(B[3:0]), .Cin(0), .Sum(sum0), .Ovfl(ovfl0), .Ovfl(ovf0) , .Cout(),.PG(), .GG());
+	add_sub_4 s1 (.A(A[7:4]), .B(B[7:4]), .Cin(0), .Sum(sum1), .Ovfl(ovfl1), Ovfl(ovf1) , .Cout(), .PG(), .GG());
+	add_sub_4 s2 (.A(A[11:8]), .B(B[11:8]), .Cin(0), .Sum(sum2), .Ovfl(ovfl2), Ovfl(ovf2) , .Cout(), .PG(), .GG());
+	add_sub_4 s3 (.A(A[15:12]), .B(B[15:12]), .Cin(0), .Sum(sum3), .Ovfl(ovfl3), Ovfl(ovf3) , .Cout(), .PG(), .GG());
 
 	//if any overflow flag is high error flagged
 	assign Error = ovf3 | ovf2 | ovf1 | ovf0;
