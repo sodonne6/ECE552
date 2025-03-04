@@ -9,7 +9,6 @@ module RED (
     wire [1:0] c1;
     wire c2;
     wire ovfl0, ovfl1, ovfl2, ovfl3;
-    wire ovfl01, ovfl23, ovfl_final;
     
     // Level 1
     add_sub_4 ADD_0 (
@@ -41,7 +40,7 @@ module RED (
     // Level 2
     add_sub_4 ADD_01 (
         .A(sum0), .B(sum1), .Cin(1'b0),
-        .Sum(sum01), .Cout(c1[0]), .Ovfl(ovfl01), .PG(), .GG()
+        .Sum(sum01), .Cout(c1[0]), .Ovfl(), .PG(), .GG()
     );
 
     add_sub_4 ADD_01C (
@@ -51,7 +50,7 @@ module RED (
     
     add_sub_4 ADD_23 (
         .A(sum2), .B(sum3), .Cin(1'b0),
-        .Sum(sum23), .Cout(c1[1]), .Ovfl(ovfl23), .PG(), .GG()
+        .Sum(sum23), .Cout(c1[1]), .Ovfl(), .PG(), .GG()
     );
 
     add_sub_4 ADD_23C (
@@ -62,7 +61,7 @@ module RED (
     // Level 3
     add_sub_4 ADD_FINAL (
         .A(sum01), .B(sum23), .Cin(1'b0),
-        .Sum(total_sum), .Cout(c2), .Ovfl(ovfl_final), .PG(), .GG()
+        .Sum(total_sum), .Cout(c2), .Ovfl(), .PG(), .GG()
     );
 
     add_sub_4 ADD_FINALC (
