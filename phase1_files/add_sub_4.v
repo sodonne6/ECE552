@@ -3,7 +3,7 @@ module add_sub_4(
     input Cin,
     output [3:0] Sum,
     output Ovfl,
-    output Cout, PG, GG
+    output PG, GG
 );
     wire [3:0] P, G;
     wire [3:1] C;
@@ -14,7 +14,6 @@ module add_sub_4(
     assign C[1] = G[0] | (P[0] & Cin);
     assign C[2] = G[1] | (P[1] & C[1]);
     assign C[3] = G[2] | (P[2] & C[2]);
-    assign Cout = G[3] | (P[3] & C[3]);
     
     assign Sum[0] = P[0] ^ Cin;
     assign Sum[1] = P[1] ^ C[1];
