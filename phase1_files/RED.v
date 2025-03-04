@@ -4,9 +4,10 @@ module red(
 );
     	wire [4:0] sum_ae, sum_bf, sum_cg, sum_dh;
     	wire [4:0] sum_ae_bf, sum_cg_dh;
-	wire [2:0] sum_ae_bf_out, sum_cg_dh_out;
+	wire [1:0] sum_ae_bf_out, sum_cg_dh_out;
     	wire [5:0] final_sum;
-	wire [3:0}
+	wire [2:0] ae_bf_cg_dh_out;
+	wire [4:0] final_MSB;
 	
     	//level 1 - add each 4 bits and log the carry out bits as the MSB's
     	add_sub_4 adder1(.A(A[15:12]), .B(B[15:12]), .Cin(1'b0), .Sum(sum_ae[3:0]), .Cout(sum_ae[4]), .PG(), .GG(), .Ovfl());
@@ -21,8 +22,18 @@ module red(
 	//the output will be 2 bits at most
 	//no cout needed
 	add_sub_4 adder7(.A({3'b0,sum_ae[4]}), .B({3'b0,sum_bf[4]}), .Cin(1'b0), .Sum(sum_ae_bf_out), .Cout(), .PG(), .GG(), .Ovfl());	
-    	add_sub_4 adder8(.A({3'b0,sum_cg[4]}), .B({3'b0,sum_cg[4]}), .Cin(1'b0), .Sum(sum_cg_dh_out), .Cout(), .PG(), .GG(), .Ovfl());
+    	add_sub_4 adder8(.A({3'b0,sum_cg[4]}), .B({3'b0,sum_dh[4]}), .Cin(1'b0), .Sum(sum_cg_dh_out), .Cout(), .PG(), .GG(), .Ovfl());
 
+
+	//LEVEL 3 
+	add_sub_4 adder9(.A(sum_ae_bf[3:0]), .B(sum_cg_dh[3:0]), .Cin(1'b0), .Sum(final_sum[3:0]), .Cout(final_sum[4]), .PG(), .GG(), .Ovfl());
+	//add carry out from last level together
+	//max 3 bits 
+	add_sub_4 adder10(.A({2'b0,sum_ae_bf_out}), .B({2'b0,sum_cg_dh_out}), .Cin(1'b0), .Sum(ae_bf_cg_dh_out), .Cout(), .PG(), .GG(), .Ovfl());
+	//last step is adder for cout from adder9 and sum of adder10
+	add_sub_4 adder11(.A({1'b0,ae_bf_cg_dh_out}), .B({3'b0,final_sum[4]}), .Cin(1'b0), .Sum(final_MSB), .Cout(), .PG(), .GG(), .Ovfl());
+
+	assign Sum = {{10{final_MSB[4]}}, final_MSB, final_sum[3:0]};
 	
 
     	
