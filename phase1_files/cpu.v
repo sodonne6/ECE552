@@ -29,7 +29,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
 	
 	dff cycleff(.q(cycle),.d(1'b1),.clk(clk),.wen(1'b1),.rst(~rst_n));
-	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(0'b0),.wen(1'b1),.clk(clk));
+	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(1'b0),.wen(1'b1),.clk(clk));
 	assign rst = ~cycle2&(~rst_n);
 	
 	//keep flags in flip flop to check branch potentially
