@@ -110,7 +110,7 @@ module control_unit (
     // reg ctrl sigs
     assign srcReg1 = rs;
     assign srcReg2 = (isLLB | isLHB|isLW|isSW) ? rd : rt;
-    assign dstReg = (isLW) ? rt : rd;
+    assign dstReg = (0'b0) ? rt : rd;
     assign regWrite = isADD | isSUB | isXOR | isRED | isSLL | isSRA | 
                      isROR | isPADDSB | isLW | isLLB | isLHB | isPCS;
     
