@@ -13,7 +13,7 @@ module ALU (
 	add_sub_16 add_unit (
 		.A(ALU_In1),
 		.B(ALU_In2),
-		.sub(Opcode[0]),
+		.sub(Opcode[0]&(|(4'b1001^opcode))),//don't subtract for SW
 		.Sum(add_result),
 		.Ovfl(Ovfl_addsub) //use a wire instead in the case V need to be assigned to any other modules so depending on the opcode the correct V is outputtted
 	);
@@ -50,45 +50,55 @@ module ALU (
 	);
 
     	always @(*) begin
+			V = 0;
         	case (Opcode)
 			
             //TODO: CONNECT WIRES HOLDING VALUES TO OPCODE
 			4'b0000, 4'b0001: begin  //add or sub - based on bit 0 of opcode - if Opcode[0] == 0 -> add 
-                		ALU_Out = add_result;
+				ALU_Out = add_result;
+				V = Ovfl_addsub;
+				
 			end
 			4'b0010: begin
 				ALU_Out = xor_result;
-				V = Ovfl_addsub;
+				
+				
 			end
 			4'b0011: begin
 				ALU_Out = red_result;
-				V = 0;
+				
+				
 			end
 			4'b0100: begin
 				ALU_Out = shft_result;
-				V = 0;
+				
+			
 			end
 			4'b0101: begin
 				ALU_Out = shft_result;
-				V = 0;
+				
+			
 			end
 			4'b0110: begin
 				ALU_Out = shft_result;
-				V = 0;
+				
+				
 			end
 			4'b0111: begin
 				ALU_Out = paddsb_result;
-				V = 0;
+				
 			end
 			default: begin
 				ALU_Out = add_result;
-				V = Ovfl_addsub;
+				
+				
 			end
         	endcase
-
+			N = ALU_Out[15]; //MSB represents negative or positive (2's complement)
         	//if ALU_Out is 0 set Z to 1
-        	Z = (ALU_Out == 16'b0) ? 1 : 0;
-        	N = ALU_Out[15]; //MSB represents negative or positive (2's complement)
+			Z = (ALU_Out == 16'b0) ? 1 : 0;
+        	
+        	
 			
     	end
 

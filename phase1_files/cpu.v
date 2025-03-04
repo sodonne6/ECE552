@@ -10,7 +10,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] RegWriteData;
 	wire [3:0] Opcode, rd,rs,rt;//where rt could be immediate
 	wire[3:0] WriteReg;//what register to write to
-	wire z,n,v;//ALU flags
+	wire z,n,v,z_q,n_q,v_q;//ALU flags
 	wire [15:0] pcp4, pcInput, branchALUresult;//pc +4, pc Input for pc flip flop, result after branch
 	wire ovflpc,ovflpc2;
 	wire llb, lhb;
@@ -27,6 +27,11 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
 	
+	//keep flags in flip flop to check branch potentially
+	dff nff(.q(n_q),.d(n),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
+	dff vff(.q(v_q),.d(v),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
+	dff zff(.q(z_q),.d(z),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
+	
 	add_sub_16 pcp4adder(//add 2 to pc
 		.A(pc), .B(16'h0002),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
@@ -35,13 +40,15 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 		
 	add_sub_16 branchAdder(//compute pc+2 + offset
-		.A(pcp4), .B({SEImm[14:0],1'b0}),
+		.A(pcp4), .B({SEImm[15:0]}),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(branchALUresult),
 		.Ovfl(ovflpc2)//don't care);
 		);
 	
-	assign pcInput = (Branch&z)? branchALUresult:pcp4;
+	assign pcInput = Branch? branchALUresult:
+					BranchReg? RReadData1//is it a branch?
+					:pcp4;
 	
 	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
@@ -50,7 +57,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign RegWriteData = lhb?highByteLoad
 		:llb? lowByteLoad
-		:MemtoReg? MReadData:ALU_Out;//are we loading from memory?
+		:MemtoReg? MReadData//are we loading from memory?
+		:jumpAndLink? pcp4//pcs?
+		:ALU_Out;//default is just the result of whatever operation
 	
 	
 	
@@ -78,9 +87,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		 //control unit
 	control_unit CU(
     .instr(instruction),        
-    .z_flag(z),              
-    .v_flag(v),              // overflow 
-    .n_flag(n),              
+    .z_flag(z_q),              
+    .v_flag(v_q),              // overflow 
+    .n_flag(n_q),              
     
     .srcReg1(cusrcReg1),      
     .srcReg2(cusrcReg2),      

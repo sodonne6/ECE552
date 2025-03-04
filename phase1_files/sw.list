@@ -2,6 +2,6 @@
 	LHB R1, 0x21
 	LLB R2, 0x11
 	LHB R2, 0x11
-	SW R1, R2, 0
-	LW R3, R2, 0
+	SW R1, R2, 4
+	LW R3, R2, 4
 	HLT
