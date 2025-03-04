@@ -5,6 +5,9 @@ module control_unit (
     input v_flag,              // overflow 
     input n_flag,              
     
+	output c_z,
+	output c_v,
+	output c_n,//should you change the register for z,v,n
    
     output [3:0] srcReg1,      
     output [3:0] srcReg2,      
@@ -86,6 +89,12 @@ module control_unit (
     assign ovfl_cond = v_flag;
     assign uncond_cond = 1'b1;
     
+	//Check to see what flags to set
+	assign c_n = isADD|isSUB;
+	assign c_v = isADD|isSUB;
+	assign c_z = isADD|isSUB|isXOR|isSLL|isSRA|isROR;
+	
+	
     // branch condition multiplexer
     wire cond_result;
     assign cond_result = (cond == 3'b000) ? neq_cond :

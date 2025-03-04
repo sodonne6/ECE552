@@ -16,21 +16,26 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire llb, lhb;
 	wire [3:0] cusrcReg1,cusrcReg2,cudstReg;//control unit signals for register file inputs
 	wire jumpAndLink, BranchReg;
-	wire rst;
+	wire rst,cycle,cycle2;//assert reset when resetting, cycle is true when rst_n is low for at least one cycle
 	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
-	
+	wire c_n,c_v,c_z;//change n,v,z?
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
 	//TODO: look at rst_n mechanics,
-	assign rst = ~rst_n;
+	
+	//assign rst = ~rst_n;
 	//pc flip flop
 	
 	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
 	
+	dff cycleff(.q(cycle),.d(1'b1),.clk(clk),.wen(1'b1),.rst(~rst_n));
+	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(0'b0),.wen(1'b1),.clk(clk));
+	assign rst = ~cycle2&(~rst_n);
+	
 	//keep flags in flip flop to check branch potentially
-	dff nff(.q(n_q),.d(n),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
-	dff vff(.q(v_q),.d(v),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
-	dff zff(.q(z_q),.d(z),.wen(~instruction[15]),.clk(clk),.rst(rst));//only store when alu operation
+	dff nff(.q(n_q),.d(n),.wen(c_n),.clk(clk),.rst(rst));//only store when alu operation
+	dff vff(.q(v_q),.d(v),.wen(c_v),.clk(clk),.rst(rst));//only store when alu operation
+	dff zff(.q(z_q),.d(z),.wen(c_z),.clk(clk),.rst(rst));//only store when alu operation
 	
 	add_sub_16 pcp4adder(//add 2 to pc
 		.A(pc), .B(16'h0002),
@@ -46,7 +51,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.Ovfl(ovflpc2)//don't care);
 		);
 	
-	assign pcInput = Branch? branchALUresult:
+	assign pcInput = rst? 16'h0000:
+					Branch ? branchALUresult:
 					BranchReg? RReadData1//is it a branch?
 					:pcp4;
 	
@@ -91,6 +97,10 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .v_flag(v_q),              // overflow 
     .n_flag(n_q),              
     
+	.c_z(c_z),
+	.c_v(c_v),
+	.c_n(c_n),
+	
     .srcReg1(cusrcReg1),      
     .srcReg2(cusrcReg2),      
 	.dstReg(WriteReg),       

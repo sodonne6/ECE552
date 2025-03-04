@@ -14,7 +14,9 @@ module cpu_tb();
    wire [15:0] MemData;
 
    wire        Halt;         /* Halt executed and in Memory or writeback stage */
-        
+   
+
+   
    integer     inst_count;
    integer     cycle_count;
 	
