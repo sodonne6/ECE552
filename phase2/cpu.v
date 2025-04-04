@@ -1,15 +1,18 @@
 module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
-	wire Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals
-	wire [3:0] ALUOp;
-	wire [15:0] RReadData1,RReadData2,MReadData,ALUin2;// register outputs, data mem outputs, and intermediate signal for ALU input
-	wire[15:0] ALU_Out;//output of central ALU
+	wire Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals for there final phase
+	wire DMemRead,DMemtoReg, DMemWrite,DALUSrc,DRegWrite;//control signals for D phase
+	wire XMemRead,XMemtoReg, XMemWrite,XRegWrite;//control signals for ex phase
+	wire WMemtoReg,WRegWrite;//control signals for M phase to forward
+	wire [3:0] DALUOp,ALUOp;
+	wire [15:0] RReadData1,RReadData2,DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
+	wire[15:0] ALU_Out,MALU_Out,WALU_Out;//output of central ALU
 	wire[15:0] instruction;//Current instruction
-	wire [15:0] SEImm;//sign extended immediate
+	wire [15:0] DSEImm,XSEImm;//sign extended immediate
 	wire dataMemEn;//enable data Mem?
 	wire [15:0] RegWriteData;
 	wire [3:0] Opcode, rd,rs,rt;//where rt could be immediate
-	wire[3:0] WriteReg;//what register to write to
+	wire[3:0] WriteReg,DWriteReg, XWriteReg, MWriteReg;//what register to write to
 	wire z,n,v,z_q,n_q,v_q;//ALU flags
 	wire [15:0] pcp4, pcInput, branchALUresult;//pc +4, pc Input for pc flip flop, result after branch
 	wire ovflpc,ovflpc2;
@@ -18,9 +21,56 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire jumpAndLink, BranchReg;
 	wire rst,cycle,cycle2;//assert reset when resetting, cycle is true when rst_n is low for at least one cycle
 	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
+	wire[15:0] Dpc;//pc in dc phase (+4)
 	wire c_n,c_v,c_z;//change n,v,z?
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
+	IFID iIFID(
+    	.clk(clk),
+    	.rst(rst),
+    	.nxt_instr(),  
+    	.nxt_PC(),    
+    	.en(1'b1),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
+    	.instr_ID(),   
+    	.PC_ID()       
+	);
+	IDEX iIDEX(
+    	.clk(clk),.rst(rst),.en(en),         	//when low the pipeline stalls 
+    	//inputs from the ID stage
+		.read_data_1_ID(DRReadData1),     //read data 1
+    	.read_data_2_ID(DRReadData2),     //read data 2
+    	.imm_ID(DSEImm),     	//sign extended immediate
+    	.PC_ID(),      	//PC value from ID
+    	//outputs to the EX stage
+    	.read_data_1_EX(XRReadData1), 	//read data 1 value going to ex
+    	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
+    	.imm_EX(XSEImm),		//immidiate going to ex 
+    	.PC_EX(),		//pc value going to ex
+		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUsrc),.ALUsrcq(ALUsrc),//EX signals 
+		.MemWrited(DMemWrite),.MemWriteq(XMemWrite),// M signals
+		.MemToRegd(DMemToRegd), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemToRegd), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg)//WB signals
+		);
+	EXMEM iEXMEM(
+        .clk(clk),.rst(rst),.en(1'b1), 
+		.ALU_Out(ALU_Out),//output of EX ALU
+		.ALU_In2(ALUin2),
+
+		.MALU_Out(MALU_Out),
+		.MALU_In2(MALUIn2),
+
+        .MemWrited(XMemWrite),.MemWriteq(MemWrite),// M signals
+		.MemToRegd(XMemToRegd), .RegWrited(XRegWrite), .RegAddrd(XWriteReg),.MemToRegq(MMemToRegd), .RegWriteq(MRegWrite), .RegAddrq(MWriteReg)//WB signals
+        );
+	MEMWB	iMEMWB(
+    .clk(clk),.rst(rst),.en(1'b1),
+	.MD_Out(MReadData),//output of memory reading
+	.ALU_Out(MALU_Out),//output of alu
+
+	.WALU_Out(WALU_Out),
+	.WD_Out(WMReadData),
+
+	.MemToRegd(MMemToRegd), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemToRegd), .RegWriteq(RegWrite), .RegAddrq(WriteReg)//WB signals
+	);
 	//TODO: look at rst_n mechanics,
 	
 	//assign rst = ~rst_n;
@@ -45,7 +95,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 		
 	add_sub_16 branchAdder(//compute pc+2 + offset
-		.A(pcp4), .B({SEImm[15:0]}),
+		.A(pcp4), .B({DSEImm[15:0]}),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(branchALUresult),
 		.Ovfl(ovflpc2)//don't care);
@@ -75,18 +125,19 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .rst(rst),
     .SrcReg1(cusrcReg1),
     .SrcReg2(cusrcReg2),
-    .DstReg(WriteReg),
+    .DstReg(DWriteReg),
     .WriteReg(RegWrite),
     .DstData(RegWriteData),
-    .SrcData1(RReadData1),
-    .SrcData2(RReadData2)
+    .SrcData1(DRReadData1),
+    .SrcData2(DRReadData2)
 );
 	
-	assign ALUin2 = ALUSrc? SEImm:RReadData2;
+	assign ALUin2 = ALUSrc? DSEImm:RReadData2;
+	assign ALUin1 = RReadData1;
 	ALU iALU(
-    	.ALU_In1(RReadData1), .ALU_In2(ALUin2),  
+    	.ALU_In1(ALUin1), .ALU_In2(ALUin2),  
     	.Opcode(ALUOp),            
-    	.Shamt(rt),             
+    	.Shamt(rt),//TODO add an intermediate signal for this      
     	.ALU_Out(ALU_Out),     
     	 .Z(z), .N(n), .V(v));
 		 
@@ -106,18 +157,18 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.dstReg(WriteReg),       
 	.regWrite(RegWrite),           
     
-	.aluOp(ALUOp),        
-	.aluSrc(ALUSrc),             // 1 ===> Immediate value; 0 ===> Register 
+	.aluOp(DALUOp),        
+	.aluSrc(DALUSrc),             // 1 ===> Immediate value; 0 ===> Register 
     
-    .memRead(MemRead),            
-    .memWrite(MemWrite),           
+    .memRead(DMemRead),            
+    .memWrite(DMemWrite),           
     
     .branch(Branch),          
     .branchReg(BranchReg),        
     .jumpAndLink(jumpAndLink),        
 	.halt(hlt),               
  
-	.immediate(SEImm),
+	.immediate(DSEImm),
     
     .llb(llb),                // Load Lower Byte
 	.lhb(lhb)
@@ -125,6 +176,6 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign MemtoReg = MemRead;
 	assign dataMemEn = MemWrite|MemRead;
 	
-	memory1c dataMem(.data_out(MReadData), .data_in(RReadData2), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
+	memory1c dataMem(.data_out(MReadData), .data_in(MALUIn2), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
 endmodule

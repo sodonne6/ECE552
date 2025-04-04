@@ -1,0 +1,104 @@
+C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/cpu.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/cpu.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module cpu
+
+Top level modules:
+	cpu
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/memory.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/memory.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module memory1c
+
+Top level modules:
+	memory1c
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/shifter_tb.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/shifter_tb.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module shifter_tb
+
+Top level modules:
+	shifter_tb
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/D-Flip-Flop.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/D-Flip-Flop.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module dff
+
+Top level modules:
+	dff
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/add_sub_4.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/add_sub_4.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module add_sub_4
+
+Top level modules:
+	add_sub_4
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/add_sub_16.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/add_sub_16.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module add_sub_16
+
+Top level modules:
+	add_sub_16
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/SLL_RSA_ROR.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/SLL_RSA_ROR.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module Shifter
+
+Top level modules:
+	Shifter
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/ALU.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/ALU.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module ALU
+
+Top level modules:
+	ALU
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/project-phase1-testbench.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/project-phase1-testbench.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module cpu_tb
+
+Top level modules:
+	cpu_tb
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/RED.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/RED.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module RED
+
+Top level modules:
+	RED
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/register_file.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/register_file.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module ReadDecoder_4_16
+-- Compiling module WriteDecoder_4_16
+-- Compiling module BitCell
+-- Compiling module Register
+-- Compiling module RegisterFile
+-- Compiling module dff
+
+Top level modules:
+	RegisterFile
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/ctrl_unit.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/ctrl_unit.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module control_unit
+
+Top level modules:
+	control_unit
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/PADDSB_16.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/PADDSB_16.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module PSA_16bit
+
+Top level modules:
+	PSA_16bit
+
+} {} {}} C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/tb_add_sub_16.v {1 {vlog -work work -stats=none C:/Users/chach/Downloads/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/ECE552-cace8a22c09de977d550e7c4d849b296bf078bf4/phase1_files/tb_add_sub_16.v
+Model Technology ModelSim ALTERA vlog 10.4d Compiler 2015.12 Dec 30 2015
+-- Compiling module tb_add_sub_16
+
+Top level modules:
+	tb_add_sub_16
+
+} {} {}}

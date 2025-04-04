@@ -4,6 +4,7 @@ module Register(
     	inout [15:0] Bitline1, inout [15:0] Bitline2
 );
 
+
 	BitCell cell_0(.clk(clk), .rst(rst), .WriteEnable(WriteReg), .ReadEnable1(ReadEnable1), .ReadEnable2(ReadEnable2), .Bitline1(Bitline1[0]), .Bitline2(Bitline2[0]), .D(D[0]));
 	BitCell cell_1(.clk(clk), .rst(rst), .WriteEnable(WriteReg), .ReadEnable1(ReadEnable1), .ReadEnable2(ReadEnable2), .Bitline1(Bitline1[1]), .Bitline2(Bitline2[1]), .D(D[1]));
 	BitCell cell_2(.clk(clk), .rst(rst), .WriteEnable(WriteReg), .ReadEnable1(ReadEnable1), .ReadEnable2(ReadEnable2), .Bitline1(Bitline1[2]), .Bitline2(Bitline2[2]), .D(D[2]));
