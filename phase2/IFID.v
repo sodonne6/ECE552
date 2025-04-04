@@ -11,17 +11,19 @@ module IFID(
     
     	//unused Bitline2 is left unconnected
 	//registere for connection
-    	Register instr_reg (
-        	.clk(clk),
-        	.rst(rst),
-        	.D(nxt_instr),
-        	.WriteReg(en),
-        	.ReadEnable1(1'b0),  // 0 enables output of stored data on Bitline1
-        	.ReadEnable2(1'b0),
-        	.Bitline1(instr_ID),
-        	.Bitline2()          // Unused
-    	);
-    	//register for pc value
+
+	dff dff_instr[15:0](.d(nxt_instr),.q(instr_ID),.wen(en),.clk(clk),.rst(rst));
+    	// Register instr_reg (
+        // 	.clk(clk),
+        // 	.rst(rst),
+        // 	.D(nxt_instr),
+        // 	.WriteReg(en),
+        // 	.ReadEnable1(1'b0),  // 0 enables output of stored data on Bitline1
+        // 	.ReadEnable2(1'b0),
+        // 	.Bitline1(instr_ID),
+        // 	.Bitline2()          // Unused
+    	// );
+    	// //register for pc value
     	Register pc_reg (
         	.clk(clk),
         	.rst(rst),

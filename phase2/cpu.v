@@ -8,7 +8,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
 	wire [15:0] WRReadData1,WRReadData2;
 	wire[15:0] ALU_Out,MALU_Out,WALU_Out;//output of central ALU
-	wire[15:0] instruction;//Current instruction
+	wire[15:0] instruction,nxt_instr;//Current instruction
+	wire[15:0] Xinstr, Minstr, Winstr;//instruction of the respective phase
 	wire [15:0] DSEImm,XSEImm;//sign extended immediate
 	wire dataMemEn;//enable data Mem?
 	wire [15:0] RegWriteData;
@@ -30,10 +31,10 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	IFID iIFID(
     	.clk(clk),
     	.rst(rst),
-    	.nxt_instr(),  
+    	.nxt_instr(nxt_instr),  
     	.nxt_PC(),    
     	.en(1'b1),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
-    	.instr_ID(),   
+    	.instr_ID(instruction),   
     	.PC_ID()       
 	);
 	IDEX iIDEX(
@@ -43,6 +44,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.read_data_2_ID(DRReadData2),     //read data 2
     	.imm_ID(DSEImm),     	//sign extended immediate
     	.PC_ID(),      	//PC value from ID
+		.instr_ID(instruction),
+		.instr_EX(Xinstr),
     	//outputs to the EX stage
     	.read_data_1_EX(XRReadData1), 	//read data 1 value going to ex
     	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
@@ -57,6 +60,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
         .clk(clk),.rst(rst),.en(1'b1), 
 		.ALU_Out(ALU_Out),//output of EX ALU
 		.ALU_In2(ALUin2),
+		.instr_EX(Xinstr),
+		.instr_M(Minstr),
 
 		.read_data_1_EX(XRReadData1),     //read data 1
     	.read_data_2_EX(XRReadData2),     //read data 2
@@ -78,7 +83,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.MD_Out(MReadData),//output of memory reading
 	.ALU_Out(MALU_Out),//output of alu
 
-
+	.instr_M(Minstr),
+	.instr_W(Winstr),
 	.read_data_1_M(MRReadData1),     //read data 1
     .read_data_2_M(MRReadData2),     //read data 2
 	.read_data_1_WB(WRReadData1), 	//read data 1 value going to ex
@@ -125,16 +131,16 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 					BranchReg? DRReadData1//is it a branch?
 					:pcp4;
 	
-	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
+	memory1c_instr instructionMem(.data_out(nxt_instr), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
-	assign highByteLoad ={instruction[7:0],WRReadData2[7:0]};
-	assign lowByteLoad ={WRReadData2[15:8],instruction[7:0]};
+	assign highByteLoad ={Winstr[7:0],WRReadData2[7:0]};
+	assign lowByteLoad ={WRReadData2[15:8],Winstr[7:0]};
 	
 	assign RegWriteData = lhb?highByteLoad
 		:llb? lowByteLoad
-		:MemtoReg? MReadData//are we loading from memory?
+		:MemtoReg? WMReadData//are we loading from memory?
 		:jumpAndLink? pcp4//pcs?
-		:ALU_Out;//default is just the result of whatever operation
+		:WALU_Out;//default is just the result of whatever operation
 	
 	
 	
@@ -151,7 +157,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .SrcData2(DRReadData2)
 );
 	
-	assign ALUin2 = ALUSrc? XSEImm:DRReadData2;
+	assign ALUin2 = ALUSrc? XSEImm:XRReadData2;
 	assign ALUin1 = XRReadData1;
 	ALU iALU(
     	.ALU_In1(ALUin1), .ALU_In2(ALUin2),  
@@ -185,13 +191,14 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .branch(Branch),          
     .branchReg(BranchReg),        
     .jumpAndLink(jumpAndLink),        
-	.halt(hlt),               
+	.halt(),               
  
 	.immediate(DSEImm),
     
     .llb(Dllb),                // Load Lower Byte
 	.lhb(Dlhb)
 );
+	assign hlt = &Winstr[15:12];
 	assign DMemtoReg = DMemRead;
 	assign dataMemEn = MemWrite|MemtoReg;
 	

@@ -111,8 +111,8 @@ module control_unit (
     assign srcReg1 = rs;
     assign srcReg2 = (isLLB | isLHB|isLW|isSW) ? rd : rt;
     assign dstReg = (0'b0) ? rt : rd;
-    assign regWrite = isADD | isSUB | isXOR | isRED | isSLL | isSRA | 
-                     isROR | isPADDSB | isLW | isLLB | isLHB | isPCS;
+    assign regWrite = (dstReg!=0)&(isADD | isSUB | isXOR | isRED | isSLL | isSRA | 
+                     isROR | isPADDSB | isLW | isLLB | isLHB | isPCS);
     
     // ALU ctrl sigs
     assign aluOp = opcode;

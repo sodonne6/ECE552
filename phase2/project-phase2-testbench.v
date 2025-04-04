@@ -144,7 +144,7 @@ module cpu_ptb();
    assign RegWrite = DUT.RegWrite;//DUT.p0.regWrite;
    // Is register file being written to in this cycle, one bit signal (1 means yes, 0 means no)
   
-   assign WriteRegister = DUT.DWriteReg;//DUT.p0.DstwithJmout;
+   assign WriteRegister = DUT.WriteReg;//DUT.p0.DstwithJmout;
    // If above is true, this should hold the name of the register being written to. (4 bit signal)
    
    assign WriteData = DUT.RegWriteData;//DUT.p0.wData;

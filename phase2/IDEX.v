@@ -12,6 +12,8 @@ module IDEX(
     	read_data_2_EX,	//read data 2 going to ex
     	imm_EX,		//immidiate going to ex 
     	PC_EX,		//pc value going to ex
+		instr_ID,
+		instr_EX,
 		ALUopd,ALUopq,ALUsrcd,ALUsrcq,//EX signals 
 		MemWrited,MemWriteq,// M signals
 		MemToRegd, RegWrited, RegAddrd,MemToRegq, RegWriteq, RegAddrq//WB signals
@@ -42,6 +44,11 @@ module IDEX(
 
 		input llbd,lhbd;
 		output llbq,lhbq;
+		input [15:0] instr_ID;
+		output[15:0] instr_EX;
+
+
+    dff ffinstr[15:0](.d(instr_ID),.q(instr_EX),.wen(en),.clk(clk),.rst(rst));
 		//control signals to be sent to the respective frames 
 		EX iEX(.ALUopd(ALUopd),.ALUopq(ALUopq),.ALUsrcd(ALUsrcd),.ALUsrcq(ALUsrcq),.clk(clk),.rst(rst),.en(en));
 		M iM(.MemWrited(MemWrited),.MemWriteq(MemWriteq),.clk(clk),.rst(rst),.en(en));

@@ -6,6 +6,8 @@ module MEMWB(
     read_data_1_WB,read_data_2_WB,
     WALU_Out,
 	WD_Out,
+    instr_M,
+    instr_W,
     MemToRegd, RegWrited, RegAddrd,MemToRegq, RegWriteq, RegAddrq//WB signals
     ,llbd,llbq,lhbd,lhbq
 );
@@ -21,6 +23,11 @@ module MEMWB(
     output[3:0] RegAddrq;
     input llbd,lhbd;
     output llbq,lhbq;
+    input [15:0] instr_M;
+    output[15:0] instr_W;
+
+
+    dff ffinstr[15:0](.d(instr_M),.q(instr_W),.wen(en),.clk(clk),.rst(rst));
 
     dff dff1[15:0](.d(ALU_Out),.q(WALU_Out),.wen(en),.clk(clk),.rst(rst));
     dff dff2[15:0](.d(MD_Out),.q(WD_Out),.wen(en),.clk(clk),.rst(rst));
