@@ -48,7 +48,10 @@ module IDEX(
 		WB iWB(.MemToRegd(MemToRegd), .RegWrited(RegWrited), .RegAddrd(RegAddrd),.MemToRegq(MemToRegq), .RegWriteq(RegWriteq), .RegAddrq(RegAddrq),
 		.llbd(llbd),.llbq(llbq),.lhbd(lhbd),.lhbq(lhbq),.clk(clk),.rst(rst),.en(en));
     	//forward read_data_1 from ID to EX
-    	Register rd1_reg (
+    	
+		dff dff_reg1 [15:0](.d(read_data_1_ID),.q(read_data_1_EX),.wen(en),.clk(clk),.rst(rst));
+		dff dff_reg2 [15:0](.d(read_data_2_ID),.q(read_data_2_EX),.wen(en),.clk(clk),.rst(rst));
+		/*Register rd1_reg (
         	.clk(clk),
         	.rst(rst),
         	.D(read_data_1_ID),
@@ -70,8 +73,10 @@ module IDEX(
         	.Bitline1(read_data_2_EX),
         	.Bitline2()
     	);
-
+*/
     	//forward the sign-extended immediate from ID to EX
+		dff dff_imm[15:0](.d(imm_ID),.q(imm_EX),.wen(en),.clk(clk),.rst(rst));
+		/*
     	Register imm_reg (
         	.clk(clk),
         	.rst(rst),
@@ -81,7 +86,7 @@ module IDEX(
         	.ReadEnable2(1'b0),
         	.Bitline1(imm_EX),
         	.Bitline2()
-    	);
+    	);*/
 
     	//forward the PC value from ID to EX
     	Register pc_reg (

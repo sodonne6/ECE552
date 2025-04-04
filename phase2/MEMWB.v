@@ -14,7 +14,7 @@ module MEMWB(
     input MemToRegd, RegWrited;
     input[3:0] RegAddrd;
     input[15:0]MD_Out,ALU_Out;
-    input[15:0] read_data_1_M,read_data_2_M;
+    input [15:0] read_data_1_M,read_data_2_M;
 	output[15:0] read_data_1_WB,read_data_2_WB;
     output[15:0]WALU_Out,WD_Out;
     output MemToRegq, RegWriteq;

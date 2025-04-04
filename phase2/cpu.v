@@ -1,12 +1,12 @@
 module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
-	wire Branch,MemRead,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals for there final phase
+	wire Branch,MemtoReg, MemWrite,ALUSrc,RegWrite;//control signals for there final phase
 	wire DMemRead,DMemtoReg, DMemWrite,DALUSrc,DRegWrite;//control signals for D phase
-	wire XMemRead,XMemtoReg, XMemWrite,XRegWrite;//control signals for ex phase
-	wire WMemtoReg,WRegWrite;//control signals for M phase to forward
+	wire XMemtoReg, XMemWrite,XRegWrite;//control signals for ex phase
+	wire MMemtoReg;
 	wire [3:0] DALUOp,ALUOp;
-	wire [15:0] RReadData1,RReadData2,DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
-	wire [15:0] WRReadData1,WRReadData2,MReadData1,MReadData2;
+	wire [15:0] DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
+	wire [15:0] WRReadData1,WRReadData2;
 	wire[15:0] ALU_Out,MALU_Out,WALU_Out;//output of central ALU
 	wire[15:0] instruction;//Current instruction
 	wire [15:0] DSEImm,XSEImm;//sign extended immediate
@@ -18,11 +18,11 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] pcp4, pcInput, branchALUresult;//pc +4, pc Input for pc flip flop, result after branch
 	wire ovflpc,ovflpc2;
 	wire llb, lhb;
-	wire [3:0] cusrcReg1,cusrcReg2,cudstReg;//control unit signals for register file inputs
+	wire [3:0] cusrcReg1,cusrcReg2;//control unit signals for register file inputs
 	wire jumpAndLink, BranchReg;
 	wire rst,cycle,cycle2;//assert reset when resetting, cycle is true when rst_n is low for at least one cycle
 	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
-	wire[15:0] Dpc;//pc in dc phase (+4)
+	wire[15:0]MRReadData1,MRReadData2;
 	wire c_n,c_v,c_z;//change n,v,z?
 	wire Dllb, Dlhb,Xllb,Xlhb,Mllb,Mlhb;
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
@@ -48,9 +48,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
     	.imm_EX(XSEImm),		//immidiate going to ex 
     	.PC_EX(),		//pc value going to ex
-		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUSrc),.ALUsrcq(ALUsrc),//EX signals 
+		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUSrc),.ALUsrcq(ALUSrc),//EX signals 
 		.MemWrited(DMemWrite),.MemWriteq(XMemWrite),// M signals
-		.MemToRegd(DMemToReg), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemToRegd), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg),//WB signals
+		.MemToRegd(DMemtoReg), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemtoReg), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg),//WB signals
 		.llbd(Dllb),.llbq(Xllb),.lhbd(Dlhb),.lhbq(Xlhb)//more WB signals
 		);
 	EXMEM iEXMEM(
@@ -60,18 +60,17 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 		.read_data_1_EX(XRReadData1),     //read data 1
     	.read_data_2_EX(XRReadData2),     //read data 2
-		.read_data_1_M(WRReadData1), 	//read data 1 value going to ex
-    	.read_data_2_M(WRReadData2),	//read data 2 going to ex
+		.read_data_1_M(MRReadData1), 	//read data 1 value going to ex
+		.read_data_2_M(MRReadData2), 	//read data 1 value going to ex
 
-
-
+		
 
 
 		.MALU_Out(MALU_Out),
 		.MALU_In2(MALUIn2),
 
         .MemWrited(XMemWrite),.MemWriteq(MemWrite),// M signals
-		.MemToRegd(XMemToRegd), .RegWrited(XRegWrite), .RegAddrd(XWriteReg),.MemToRegq(MMemToRegd), .RegWriteq(MRegWrite), .RegAddrq(MWriteReg),//WB signals
+		.MemToRegd(XMemtoReg), .RegWrited(XRegWrite), .RegAddrd(XWriteReg),.MemToRegq(MMemtoReg), .RegWriteq(MRegWrite), .RegAddrq(MWriteReg),//WB signals
 		.llbd(Xllb),.llbq(Mllb),.lhbd(Xlhb),.lhbq(Mlhb)//more WB signals
         );
 	MEMWB	iMEMWB(
@@ -80,15 +79,15 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.ALU_Out(MALU_Out),//output of alu
 
 
-	.read_data_1_M(DRReadData1),     //read data 1
-    .read_data_2_M(DRReadData2),     //read data 2
-	.read_data_1_WB(XRReadData1), 	//read data 1 value going to ex
-    .read_data_2_WB(XRReadData2),	//read data 2 going to ex
+	.read_data_1_M(MRReadData1),     //read data 1
+    .read_data_2_M(MRReadData2),     //read data 2
+	.read_data_1_WB(WRReadData1), 	//read data 1 value going to ex
+    .read_data_2_WB(WRReadData2),	//read data 2 going to ex
 
 	.WALU_Out(WALU_Out),
 	.WD_Out(WMReadData),
 
-	.MemToRegd(MMemToRegd), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemToReg), .RegWriteq(RegWrite), .RegAddrq(WriteReg),//WB signals
+	.MemToRegd(MMemtoReg), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemtoReg), .RegWriteq(RegWrite), .RegAddrq(WriteReg),//WB signals
 	.llbd(Mllb),.llbq(llb),.lhbd(Mlhb),.lhbq(lhb)//more WB signals
 	);
 	//TODO: look at rst_n mechanics,
@@ -123,7 +122,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign pcInput = rst? 16'h0000:
 					Branch ? branchALUresult:
-					BranchReg? RReadData1//is it a branch?
+					BranchReg? DRReadData1//is it a branch?
 					:pcp4;
 	
 	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
@@ -152,8 +151,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .SrcData2(DRReadData2)
 );
 	
-	assign ALUin2 = ALUSrc? DSEImm:RReadData2;
-	assign ALUin1 = RReadData1;
+	assign ALUin2 = ALUSrc? XSEImm:DRReadData2;
+	assign ALUin1 = XRReadData1;
 	ALU iALU(
     	.ALU_In1(ALUin1), .ALU_In2(ALUin2),  
     	.Opcode(ALUOp),            
@@ -194,7 +193,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.lhb(Dlhb)
 );
 	assign DMemtoReg = DMemRead;
-	assign dataMemEn = MemWrite|MemToReg;
+	assign dataMemEn = MemWrite|MemtoReg;
 	
 	memory1c dataMem(.data_out(MReadData), .data_in(MALUIn2), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
