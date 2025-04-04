@@ -6,6 +6,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire WMemtoReg,WRegWrite;//control signals for M phase to forward
 	wire [3:0] DALUOp,ALUOp;
 	wire [15:0] RReadData1,RReadData2,DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
+	wire [15:0] WRReadData1,WRReadData2,MReadData1,MReadData2;
 	wire[15:0] ALU_Out,MALU_Out,WALU_Out;//output of central ALU
 	wire[15:0] instruction;//Current instruction
 	wire [15:0] DSEImm,XSEImm;//sign extended immediate
@@ -23,6 +24,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
 	wire[15:0] Dpc;//pc in dc phase (+4)
 	wire c_n,c_v,c_z;//change n,v,z?
+	wire Dllb, Dlhb,Xllb,Xlhb,Mllb,Mlhb;
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
 	IFID iIFID(
@@ -35,7 +37,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.PC_ID()       
 	);
 	IDEX iIDEX(
-    	.clk(clk),.rst(rst),.en(en),         	//when low the pipeline stalls 
+    	.clk(clk),.rst(rst),.en(1'b1),         	//when low the pipeline stalls 
     	//inputs from the ID stage
 		.read_data_1_ID(DRReadData1),     //read data 1
     	.read_data_2_ID(DRReadData2),     //read data 2
@@ -46,30 +48,48 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
     	.imm_EX(XSEImm),		//immidiate going to ex 
     	.PC_EX(),		//pc value going to ex
-		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUsrc),.ALUsrcq(ALUsrc),//EX signals 
+		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUSrc),.ALUsrcq(ALUsrc),//EX signals 
 		.MemWrited(DMemWrite),.MemWriteq(XMemWrite),// M signals
-		.MemToRegd(DMemToRegd), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemToRegd), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg)//WB signals
+		.MemToRegd(DMemToReg), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemToRegd), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg),//WB signals
+		.llbd(Dllb),.llbq(Xllb),.lhbd(Dlhb),.lhbq(Xlhb)//more WB signals
 		);
 	EXMEM iEXMEM(
         .clk(clk),.rst(rst),.en(1'b1), 
 		.ALU_Out(ALU_Out),//output of EX ALU
 		.ALU_In2(ALUin2),
 
+		.read_data_1_EX(XRReadData1),     //read data 1
+    	.read_data_2_EX(XRReadData2),     //read data 2
+		.read_data_1_M(WRReadData1), 	//read data 1 value going to ex
+    	.read_data_2_M(WRReadData2),	//read data 2 going to ex
+
+
+
+
+
 		.MALU_Out(MALU_Out),
 		.MALU_In2(MALUIn2),
 
         .MemWrited(XMemWrite),.MemWriteq(MemWrite),// M signals
-		.MemToRegd(XMemToRegd), .RegWrited(XRegWrite), .RegAddrd(XWriteReg),.MemToRegq(MMemToRegd), .RegWriteq(MRegWrite), .RegAddrq(MWriteReg)//WB signals
+		.MemToRegd(XMemToRegd), .RegWrited(XRegWrite), .RegAddrd(XWriteReg),.MemToRegq(MMemToRegd), .RegWriteq(MRegWrite), .RegAddrq(MWriteReg),//WB signals
+		.llbd(Xllb),.llbq(Mllb),.lhbd(Xlhb),.lhbq(Mlhb)//more WB signals
         );
 	MEMWB	iMEMWB(
     .clk(clk),.rst(rst),.en(1'b1),
 	.MD_Out(MReadData),//output of memory reading
 	.ALU_Out(MALU_Out),//output of alu
 
+
+	.read_data_1_M(DRReadData1),     //read data 1
+    .read_data_2_M(DRReadData2),     //read data 2
+	.read_data_1_WB(XRReadData1), 	//read data 1 value going to ex
+    .read_data_2_WB(XRReadData2),	//read data 2 going to ex
+
 	.WALU_Out(WALU_Out),
 	.WD_Out(WMReadData),
 
-	.MemToRegd(MMemToRegd), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemToRegd), .RegWriteq(RegWrite), .RegAddrq(WriteReg)//WB signals
+	.MemToRegd(MMemToRegd), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemToReg), .RegWriteq(RegWrite), .RegAddrq(WriteReg),//WB signals
+	.llbd(Mllb),.llbq(llb),.lhbd(Mlhb),.lhbq(lhb)//more WB signals
 	);
 	//TODO: look at rst_n mechanics,
 	
@@ -108,8 +128,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	memory1c_instr instructionMem(.data_out(instruction), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
-	assign highByteLoad ={instruction[7:0],RReadData2[7:0]} ;
-	assign lowByteLoad ={RReadData2[15:8],instruction[7:0]};
+	assign highByteLoad ={instruction[7:0],WRReadData2[7:0]};
+	assign lowByteLoad ={WRReadData2[15:8],instruction[7:0]};
 	
 	assign RegWriteData = lhb?highByteLoad
 		:llb? lowByteLoad
@@ -125,7 +145,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .rst(rst),
     .SrcReg1(cusrcReg1),
     .SrcReg2(cusrcReg2),
-    .DstReg(DWriteReg),
+    .DstReg(WriteReg),
     .WriteReg(RegWrite),
     .DstData(RegWriteData),
     .SrcData1(DRReadData1),
@@ -154,8 +174,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
     .srcReg1(cusrcReg1),      
     .srcReg2(cusrcReg2),      
-	.dstReg(WriteReg),       
-	.regWrite(RegWrite),           
+	.dstReg(DWriteReg),       
+	.regWrite(DRegWrite),           
     
 	.aluOp(DALUOp),        
 	.aluSrc(DALUSrc),             // 1 ===> Immediate value; 0 ===> Register 
@@ -170,12 +190,12 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
  
 	.immediate(DSEImm),
     
-    .llb(llb),                // Load Lower Byte
-	.lhb(lhb)
+    .llb(Dllb),                // Load Lower Byte
+	.lhb(Dlhb)
 );
-	assign MemtoReg = MemRead;
-	assign dataMemEn = MemWrite|MemRead;
+	assign DMemtoReg = DMemRead;
+	assign dataMemEn = MemWrite|MemToReg;
 	
-	memory1c dataMem(.data_out(MReadData), .data_in(MALUIn2), .addr(ALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
+	memory1c dataMem(.data_out(MReadData), .data_in(MALUIn2), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
 endmodule
