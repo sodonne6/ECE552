@@ -28,11 +28,12 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire n_cur,v_cur, z_cur;//flag bits for this exact cycle, will be based on flag bits+ flag bits stored in register
 	wire noopd, noopq;//input and output of the IDEX noop wire
 	wire Dllb, Dlhb,Xllb,Xlhb,Mllb,Mlhb;
-	wire [15:0] pcp4_id;//incremented pc for id phase
+	wire [15:0] pcp4_id,pcp4_ex,pcp4_m,pcp4_w;//incremented pc for id phase
 	wire halting;//are we in a state of halting?
+	wire [3:0] shamtd,shamtq;//shift amount for shift operations
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
-	
+	assign shamtd = rt;
 	IFID iIFID(
     	.clk(clk),
     	.rst(rst|Branch),//reset if resetting or a branch operation
@@ -49,16 +50,18 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.read_data_1_ID(DRReadData1),     //read data 1
     	.read_data_2_ID(DRReadData2),     //read data 2
     	.imm_ID(DSEImm),     	//sign extended immediate
-    	.PC_ID(),      	//PC value from ID
+    	.PC_ID(pcp4_id),      	//PC value from ID
 		.instr_ID(instruction),
 		.instr_EX(Xinstr),
 		.noopd(noopd),
 		.noopq(noopq),
+		.shamtd(shamtd),
+		.shamtq(shamtq),
     	//outputs to the EX stage
     	.read_data_1_EX(XRReadData1), 	//read data 1 value going to ex
     	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
     	.imm_EX(XSEImm),		//immidiate going to ex 
-    	.PC_EX(),		//pc value going to ex
+    	.PC_EX(pcp4_ex),		//pc value going to ex
 		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUSrc),.ALUsrcq(ALUSrc),//EX signals 
 		.MemWrited(DMemWrite),.MemWriteq(XMemWrite),// M signals
 		.MemToRegd(DMemtoReg), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemtoReg), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg),//WB signals
@@ -76,8 +79,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.read_data_1_M(MRReadData1), 	//read data 1 value going to ex
 		.read_data_2_M(MRReadData2), 	//read data 1 value going to ex
 
-		
-
+		.PC_EX(pcp4_ex),
+		.PC_M(pcp4_m),
 
 		.MALU_Out(MALU_Out),
 		.MALU_In2(MALUIn2),
@@ -97,6 +100,10 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .read_data_2_M(MRReadData2),     //read data 2
 	.read_data_1_WB(WRReadData1), 	//read data 1 value going to ex
     .read_data_2_WB(WRReadData2),	//read data 2 going to ex
+
+	
+	.PC_M(pcp4_m),
+	.PC_W(pcp4_w),
 
 	.WALU_Out(WALU_Out),
 	.WD_Out(WMReadData),
@@ -153,7 +160,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign RegWriteData = lhb?highByteLoad
 		:llb? lowByteLoad
 		:MemtoReg? WMReadData//are we loading from memory?
-		:jumpAndLink? pcp4//pcs?
+		:jumpAndLink? pcp4_w//pcs?
 		:WALU_Out;//default is just the result of whatever operation
 	
 	

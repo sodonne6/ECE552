@@ -19,6 +19,7 @@ module IDEX(
 		MemWrited,MemWriteq,// M signals
 		MemToRegd, RegWrited, RegAddrd,MemToRegq, RegWriteq, RegAddrq//WB signals
 		,llbd,llbq,lhbd,lhbq
+		,shamtd,shamtq
 
 );
 
@@ -49,7 +50,8 @@ module IDEX(
 		output llbq,lhbq;
 		input [15:0] instr_ID;
 		output[15:0] instr_EX;
-
+		input [3:0] shamtd;//shiftamount
+		output [3:0] shamtq;
 
     dff ffinstr[15:0](.d(instr_ID),.q(instr_EX),.wen(en),.clk(clk),.rst(rst));
 		//control signals to be sent to the respective frames 
@@ -63,6 +65,7 @@ module IDEX(
     	dff dff_noop(.d(noopd),.q(noopq),.wen(en),.clk(clk),.rst(rst));
 		dff dff_reg1 [15:0](.d(read_data_1_ID),.q(read_data_1_EX),.wen(en),.clk(clk),.rst(rst));
 		dff dff_reg2 [15:0](.d(read_data_2_ID),.q(read_data_2_EX),.wen(en),.clk(clk),.rst(rst));
+		dff dff_shamt [3:0](.d(shamtd),.q(shamtq),.wen(en),.clk(clk),.rst(rst));
 		/*Register rd1_reg (
         	.clk(clk),
         	.rst(rst),
@@ -99,16 +102,17 @@ module IDEX(
         	.Bitline1(imm_EX),
         	.Bitline2()
     	);*/
-
-    	Register pc_reg (
-        	.clk(clk),
-        	.rst(rst),
-        	.D(PC_ID),
-        	.WriteReg(en),
-        	.ReadEnable1(1'b0),
-        	.ReadEnable2(1'b0),
-        	.Bitline1(PC_EX),
-        	.Bitline2()
-    	);
+		//pc ff
+		dff dff_pc[15:0](.d(PC_ID),.q(PC_EX),.wen(en),.clk(clk),.rst(rst));
+    	// Register pc_reg (
+        // 	.clk(clk),
+        // 	.rst(rst),
+        // 	.D(PC_ID),
+        // 	.WriteReg(en),
+        // 	.ReadEnable1(1'b0),
+        // 	.ReadEnable2(1'b0),
+        // 	.Bitline1(PC_EX),
+        // 	.Bitline2()
+    	// );
 
 endmodule
