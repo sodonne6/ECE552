@@ -25,18 +25,24 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
 	wire[15:0]MRReadData1,MRReadData2;
 	wire c_n,c_v,c_z;//change n,v,z?
+	wire n_cur,v_cur, z_cur;//flag bits for this exact cycle, will be based on flag bits+ flag bits stored in register
+	wire noopd, noopq;//input and output of the IDEX noop wire
 	wire Dllb, Dlhb,Xllb,Xlhb,Mllb,Mlhb;
+	wire [15:0] pcp4_id;//incremented pc for id phase
+	wire halting;//are we in a state of halting?
+	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	
 	IFID iIFID(
     	.clk(clk),
-    	.rst(rst),
+    	.rst(rst|Branch),//reset if resetting or a branch operation
     	.nxt_instr(nxt_instr),  
-    	.nxt_PC(),    
+    	.nxt_PC(pcp4),    
     	.en(1'b1),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
     	.instr_ID(instruction),   
-    	.PC_ID()       
+    	.PC_ID(pcp4_id)       
 	);
+	assign noopd = Branch|BranchReg;
 	IDEX iIDEX(
     	.clk(clk),.rst(rst),.en(1'b1),         	//when low the pipeline stalls 
     	//inputs from the ID stage
@@ -46,6 +52,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.PC_ID(),      	//PC value from ID
 		.instr_ID(instruction),
 		.instr_EX(Xinstr),
+		.noopd(noopd),
+		.noopq(noopq),
     	//outputs to the EX stage
     	.read_data_1_EX(XRReadData1), 	//read data 1 value going to ex
     	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
@@ -108,9 +116,14 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign rst = ~cycle2&(~rst_n);
 	
 	//keep flags in flip flop to check branch potentially
-	dff nff(.q(n_q),.d(n),.wen(c_n),.clk(clk),.rst(rst));//only store when alu operation
-	dff vff(.q(v_q),.d(v),.wen(c_v),.clk(clk),.rst(rst));//only store when alu operation
-	dff zff(.q(z_q),.d(z),.wen(c_z),.clk(clk),.rst(rst));//only store when alu operation
+	dff nff(.q(n_q),.d(n),.wen(c_n&(~noopq)),.clk(clk),.rst(rst));//only store when alu operation
+	dff vff(.q(v_q),.d(v),.wen(c_v&(~noopq)),.clk(clk),.rst(rst));//only store when alu operation
+	dff zff(.q(z_q),.d(z),.wen(c_z&(~noopq)),.clk(clk),.rst(rst));//only store when alu operation
+
+	//are we looking at this cycles or last cycles?	
+	assign n_cur = (n_q & (~c_n))|(n & c_n);
+	assign v_cur = (v_q & (~c_v))|(v & c_v);
+	assign z_cur = (z_q & (~c_z))|(z & c_z);
 	
 	add_sub_16 pcp4adder(//add 2 to pc
 		.A(pc), .B(16'h0002),
@@ -120,7 +133,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 		
 	add_sub_16 branchAdder(//compute pc+2 + offset
-		.A(pcp4), .B({DSEImm[15:0]}),
+		.A(pcp4_id), .B({DSEImm[15:0]}),
 		.sub(1'b0), // 1 for subtraction, 0 for addition
 		.Sum(branchALUresult),
 		.Ovfl(ovflpc2)//don't care);
@@ -128,7 +141,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign pcInput = rst? 16'h0000:
 					Branch ? branchALUresult:
-					BranchReg? DRReadData1//is it a branch?
+					BranchReg? DRReadData1://is it a branch?
+					halting? pc//is the current F instruction a halt
 					:pcp4;
 	
 	memory1c_instr instructionMem(.data_out(nxt_instr), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
@@ -169,9 +183,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		 //control unit
 	control_unit CU(
     .instr(instruction),        
-    .z_flag(z_q),              
-    .v_flag(v_q),              // overflow 
-    .n_flag(n_q),              
+    .z_flag(cur_z),              
+    .v_flag(cur_v),              // overflow 
+    .n_flag(cur_n),              
     
 	.c_z(c_z),
 	.c_v(c_v),
@@ -198,7 +212,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .llb(Dllb),                // Load Lower Byte
 	.lhb(Dlhb)
 );
-	assign hlt = &Winstr[15:12];
+	assign halting = &nxt_instr[15:12];//is a halt operation entering the pipeline
+	assign hlt = &Winstr[15:12];//is a halt instruction at the end of the pipeline
+	//if the halt was flushed, the instruction buffer would have been modified
 	assign DMemtoReg = DMemRead;
 	assign dataMemEn = MemWrite|MemtoReg;
 	
