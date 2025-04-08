@@ -36,7 +36,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
 	wire[15:0] fALUin1_reg,fALUin2_reg;//register values from the forwarding unit
 	wire[3:0] XALUin1addr,XALUin2addr;//what were the register input addresses?
-
+	wire fMEMin;//am I forwarding mem to mem
+	wire [15:0]fMEMin_reg, write_data;//the value forwarded, the register write data
+	assign write_data = fMEMin? fMEMin_reg: MALUIn2;
 
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	assign shamtd = rt;
@@ -130,7 +132,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.maddr(MWriteReg),.waddr(WriteReg),
 	.mwen(MRegWrite), .wwen(RegWrite),
 	.reg1en(1'b1), .reg2en(1'b1),.mALU_out(MALU_Out),.wout(RegWriteData),
-	.mlb(Mlhb|Mllb),.xlb(Xlhb|Xllb),.mByteload(mByteload),.xrd(XWriteReg));
+	.mlb(Mlhb|Mllb),.xlb(Xlhb|Xllb),.mByteload(mByteload),.xrd(XWriteReg)
+	,.msw(MemWrite), .mrtaddr(Minstr[11:8]),.fMEMin(fMEMin),.fMEMin_reg(fMEMin_reg) );
 
 	//pc flip flop
 	
@@ -252,6 +255,6 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign DMemtoReg = DMemRead;
 	assign dataMemEn = MemWrite|MemtoReg;
 	
-	memory1c dataMem(.data_out(MReadData), .data_in(MALUIn2), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
+	memory1c dataMem(.data_out(MReadData), .data_in(write_data), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
 endmodule
