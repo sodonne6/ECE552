@@ -6,6 +6,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire MMemtoReg;
 	wire [3:0] DALUOp,ALUOp;
 	wire [15:0] DRReadData1,DRReadData2,XRReadData1,XRReadData2,MReadData,WMReadData,ALUin2,ALUin1,MALUIn2;// register outputs, data mem outputs, and intermediate signal for ALU input
+	wire [15:0] XRReadData1pref,XRReadData2pref;//the data in the X phase pre the forwarding step
 	wire [15:0] WRReadData1,WRReadData2;
 	wire[15:0] ALU_Out,MALU_Out,WALU_Out;//output of central ALU
 	wire[15:0] instruction,nxt_instr;//Current instruction
@@ -22,7 +23,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [3:0] cusrcReg1,cusrcReg2;//control unit signals for register file inputs
 	wire jumpAndLink, BranchReg;
 	wire rst,cycle,cycle2;//assert reset when resetting, cycle is true when rst_n is low for at least one cycle
-	wire [15:0] highByteLoad,lowByteLoad;//intermediate signals for hbl, lbu
+	wire [15:0] highByteLoad,lowByteLoad,mhighByteLoad,mlowByteLoad,mByteload;//intermediate signals for hbl, lbu
 	wire[15:0]MRReadData1,MRReadData2;
 	wire c_n,c_v,c_z;//change n,v,z?
 	wire n_cur,v_cur, z_cur;//flag bits for this exact cycle, will be based on flag bits+ flag bits stored in register
@@ -32,6 +33,11 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire halting;//are we in a state of halting?
 	wire [3:0] shamtd,shamtq;//shift amount for shift operations
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
+	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
+	wire[15:0] fALUin1_reg,fALUin2_reg;//register values from the forwarding unit
+	wire[3:0] XALUin1addr,XALUin2addr;//what were the register input addresses?
+
+
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	assign shamtd = rt;
 	IFID iIFID(
@@ -57,9 +63,15 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.noopq(noopq),
 		.shamtd(shamtd),
 		.shamtq(shamtq),
+
+		.ALUin1addrd(cusrcReg1),
+		.ALUin1addrq(XALUin1addr),
+		.ALUin2addrd(cusrcReg2),
+		.ALUin2addrq(XALUin2addr),
+
     	//outputs to the EX stage
-    	.read_data_1_EX(XRReadData1), 	//read data 1 value going to ex
-    	.read_data_2_EX(XRReadData2),	//read data 2 going to ex
+    	.read_data_1_EX(XRReadData1pref), 	//read data 1 value going to ex
+    	.read_data_2_EX(XRReadData2pref),	//read data 2 going to ex
     	.imm_EX(XSEImm),		//immidiate going to ex 
     	.PC_EX(pcp4_ex),		//pc value going to ex
 		.ALUopd(DALUOp),.ALUopq(ALUOp),.ALUsrcd(DALUSrc),.ALUsrcq(ALUSrc),//EX signals 
@@ -111,9 +123,15 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	.MemToRegd(MMemtoReg), .RegWrited(MRegWrite), .RegAddrd(MWriteReg),.MemToRegq(MemtoReg), .RegWriteq(RegWrite), .RegAddrq(WriteReg),//WB signals
 	.llbd(Mllb),.llbq(llb),.lhbd(Mlhb),.lhbq(lhb)//more WB signals
 	);
-	//TODO: look at rst_n mechanics,
-	
-	//assign rst = ~rst_n;
+
+
+	fu forwarding_unit(.fALUin1(fALUin1),.fALUin1_reg(fALUin1_reg),.fALUin2(fALUin2),.fALUin2_reg(fALUin2_reg),
+	.xaddr1(XALUin1addr), .xaddr2(XALUin2addr), 
+	.maddr(MWriteReg),.waddr(WriteReg),
+	.mwen(MRegWrite), .wwen(RegWrite),
+	.reg1en(1'b1), .reg2en(1'b1),.mALU_out(MALU_Out),.wout(RegWriteData),
+	.mlb(Mlhb|Mllb),.xlb(Xlhb|Xllb),.mByteload(mByteload),.xrd(XWriteReg));
+
 	//pc flip flop
 	
 	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
@@ -156,7 +174,11 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	assign highByteLoad ={Winstr[7:0],WRReadData2[7:0]};
 	assign lowByteLoad ={WRReadData2[15:8],Winstr[7:0]};
-	
+
+	assign mhighByteLoad ={Minstr[7:0],MRReadData2[7:0]};
+	assign mlowByteLoad ={MRReadData2[15:8],Minstr[7:0]};
+	assign mByteload = Mlhb? mhighByteLoad:mlowByteLoad;
+
 	assign RegWriteData = lhb?highByteLoad
 		:llb? lowByteLoad
 		:MemtoReg? WMReadData//are we loading from memory?
@@ -177,22 +199,27 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     .SrcData1(DRReadData1),
     .SrcData2(DRReadData2)
 );
-	
+
+	assign XRReadData1 = fALUin1? fALUin1_reg:
+					XRReadData1pref;
+	assign XRReadData2 = fALUin2? fALUin2_reg:
+				XRReadData2pref;
+	//are we forwarding?
 	assign ALUin2 = ALUSrc? XSEImm:XRReadData2;
 	assign ALUin1 = XRReadData1;
 	ALU iALU(
     	.ALU_In1(ALUin1), .ALU_In2(ALUin2),  
     	.Opcode(ALUOp),            
-    	.Shamt(rt),//TODO add an intermediate signal for this      
+    	.Shamt(shamtq),//TODO add an intermediate signal for this      
     	.ALU_Out(ALU_Out),     
     	 .Z(z), .N(n), .V(v));
 		 
 		 //control unit
 	control_unit CU(
     .instr(instruction),        
-    .z_flag(cur_z),              
-    .v_flag(cur_v),              // overflow 
-    .n_flag(cur_n),              
+    .z_flag(z_cur),              
+    .v_flag(v_cur),              // overflow 
+    .n_flag(n_cur),              
     
 	.c_z(c_z),
 	.c_v(c_v),

@@ -1,4 +1,4 @@
-module BitCell(
+module BitCelli(
     input clk, 
     input rst, 
     input D, 
@@ -12,12 +12,13 @@ module BitCell(
     reg Q;
     
     //flip flop for memory - when enable is high load new value
-    always @(posedge clk or posedge rst) begin
+    always @(posedge (clk),rst) begin
         if (rst)
             Q <= 1'b0;
         else if (WriteEnable)
             Q <= D;
     end
+    
     
     //2 tri states - active high so Q when low 
     assign Bitline1 = ReadEnable1 ? 1'bz : Q;

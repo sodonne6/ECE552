@@ -36,7 +36,8 @@ module MEMWB(
     dff dff2[15:0](.d(MD_Out),.q(WD_Out),.wen(en),.clk(clk),.rst(rst));
     dff dff3[15:0](.d(read_data_1_M),.q(read_data_1_WB),.clk(clk),.rst(rst),.wen(en));
     dff dff4[15:0](.d(read_data_2_M),.q(read_data_2_WB),.clk(clk),.rst(rst),.wen(en));
-    dff dff_pc[15:0](.d(PC_M),.q(PC_W),.clk(clk),.wen(wen),.rst(rst));
+    dff dff_pc[15:0](.d(PC_M),.q(PC_W),.clk(clk),.wen(en),.rst(rst));
+
     //control signals to be sent to the respective frames 
     WB iWB(.MemToRegd(MemToRegd), .RegWrited(RegWrited), .RegAddrd(RegAddrd),.MemToRegq(MemToRegq), .RegWriteq(RegWriteq), .RegAddrq(RegAddrq),
     .llbd(llbd),.llbq(llbq),.lhbd(lhbd),.lhbq(lhbq),.clk(clk),.rst(rst),.en(en));
