@@ -33,7 +33,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire halting;//are we in a state of halting?
 	wire [3:0] shamtd,shamtq;//shift amount for shift operations
 	wire stall_if_id;
-	
+	assign stall_if_id= 1'b0;
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
 	wire[15:0] fALUin1_reg,fALUin2_reg;//register values from the forwarding unit
