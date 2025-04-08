@@ -1,0 +1,40 @@
+module branch_handler(
+    input wire [2:0] br_cond,      
+    input wire [2:0] flags,         
+    input wire is_branch,           // sig telling if instr is B or BR
+    input wire [15:0] branch_target, 
+    input wire [15:0] pc_plus_2,   
+    output wire take_branch,        
+    output wire [15:0] next_pc,    
+    output wire flush_pipeline      // sig to flush pipeline stagse
+);
+
+    // Extract individual flags
+    wire z_flag, v_flag, n_flag;
+    assign z_flag = flags[2];  
+    assign v_flag = flags[1]; 
+    assign n_flag = flags[0];  
+
+    reg branch_taken;
+    
+    always @(*) begin
+        case (br_cond)
+            3'b000: branch_taken = ~z_flag;         // NEQ (Z = 0)
+            3'b001: branch_taken = z_flag;          // EQ (Z = 1)
+            3'b010: branch_taken = ~z_flag & ~n_flag; // GT (Z = N = 0)
+            3'b011: branch_taken = n_flag;          // LT (N = 1)
+            3'b100: branch_taken = z_flag | (~z_flag & ~n_flag); // GTE (Z = 1 or Z = N = 0)
+            3'b101: branch_taken = n_flag | z_flag; // LTE (N = 1 or Z = 1)
+            3'b110: branch_taken = v_flag;          // OVFL (V = 1)
+            3'b111: branch_taken = 1'b1;            // UNCOND (alwys taken)
+            default: branch_taken = 1'b0;
+        endcase
+    end
+
+    assign take_branch = is_branch & branch_taken;
+
+    assign next_pc = take_branch ? branch_target : pc_plus_2;
+
+    assign flush_pipeline = take_branch;
+
+endmodule
