@@ -32,15 +32,16 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] pcp4_id,pcp4_ex,pcp4_m,pcp4_w;//incremented pc for id phase
 	wire halting;//are we in a state of halting?
 	wire [3:0] shamtd,shamtq;//shift amount for shift operations
-	wire stall_if_id;
-	assign stall_if_id= 1'b0;
+	wire stall_if_id,pc_write;
+	assign stall_if_id= 0;
+	assign pc_write = 1;
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
 	wire[15:0] fALUin1_reg,fALUin2_reg;//register values from the forwarding unit
 	wire[3:0] XALUin1addr,XALUin2addr;//what were the register input addresses?
 	wire fMEMin;//am I forwarding mem to mem
 	wire [15:0]fMEMin_reg, write_data;//the value forwarded, the register write data
-	assign write_data = fMEMin? fMEMin_reg: MALUIn2;
+	assign write_data = fMEMin? fMEMin_reg: MRReadData2;
 
 	assign {Opcode,rd,rs,rt }= instruction;//seperate the parts of the instruction
 	assign shamtd = rt;
@@ -140,7 +141,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 	//pc flip flop
 	
-	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(~stall_if_id), .clk(clk), .rst(rst));
+	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(pc_write), .clk(clk), .rst(rst));
 	
 	dff cycleff(.q(cycle),.d(1'b1),.clk(clk),.wen(1'b1),.rst(~rst_n));
 	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(1'b0),.wen(1'b1),.clk(clk));
@@ -256,7 +257,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign hlt = &Winstr[15:12];//is a halt instruction at the end of the pipeline
 	//if the halt was flushed, the instruction buffer would have been modified
 	assign DMemtoReg = DMemRead;
-	assign dataMemEn = MemWrite|MemtoReg;
+	assign dataMemEn = MemWrite|MMemtoReg;
 	
 	memory1c dataMem(.data_out(MReadData), .data_in(write_data), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
 
