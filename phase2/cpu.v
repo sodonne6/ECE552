@@ -32,6 +32,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [15:0] pcp4_id,pcp4_ex,pcp4_m,pcp4_w;//incremented pc for id phase
 	wire halting;//are we in a state of halting?
 	wire [3:0] shamtd,shamtq;//shift amount for shift operations
+	wire stall_if_id;
+	
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
 	wire[15:0] fALUin1_reg,fALUin2_reg;//register values from the forwarding unit
@@ -47,13 +49,13 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
     	.rst(rst|Branch),//reset if resetting or a branch operation
     	.nxt_instr(nxt_instr),  
     	.nxt_PC(pcp4),    
-    	.en(1'b1),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
+    	.en(~stall_if_id),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
     	.instr_ID(instruction),   
     	.PC_ID(pcp4_id)       
 	);
 	assign noopd = Branch|BranchReg;
 	IDEX iIDEX(
-    	.clk(clk),.rst(rst),.en(1'b1),         	//when low the pipeline stalls 
+    	.clk(clk),.rst(rst|stall_if_id),.en(~stall_if_id),         	//when low the pipeline stalls 
     	//inputs from the ID stage
 		.read_data_1_ID(DRReadData1),     //read data 1
     	.read_data_2_ID(DRReadData2),     //read data 2
@@ -81,6 +83,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.MemToRegd(DMemtoReg), .RegWrited(DRegWrite), .RegAddrd(DWriteReg),.MemToRegq(XMemtoReg), .RegWriteq(XRegWrite), .RegAddrq(XWriteReg),//WB signals
 		.llbd(Dllb),.llbq(Xllb),.lhbd(Dlhb),.lhbq(Xlhb)//more WB signals
 		);
+
 	EXMEM iEXMEM(
         .clk(clk),.rst(rst),.en(1'b1), 
 		.ALU_Out(ALU_Out),//output of EX ALU
@@ -137,7 +140,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 	//pc flip flop
 	
-	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(1'b1), .clk(clk), .rst(rst));
+	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(~stall_if_id), .clk(clk), .rst(rst));
 	
 	dff cycleff(.q(cycle),.d(1'b1),.clk(clk),.wen(1'b1),.rst(~rst_n));
 	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(1'b0),.wen(1'b1),.clk(clk));
