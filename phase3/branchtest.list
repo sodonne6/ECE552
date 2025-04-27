@@ -1,0 +1,11 @@
+LLB R1, 0x51
+LLB R2, 0x51
+SUB R3, R2, R1
+B 111, END 
+HLT
+add R4, R2, R1
+add R5, R2, R1
+add R6, R2, R1
+END: add R7, R2, R1
+add R8, R2, R1
+HLT

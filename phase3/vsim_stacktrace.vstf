@@ -1,0 +1,23 @@
+# Current time Fri Apr 04 13:40:09 2025
+# ModelSim ALTERA Stack Trace
+# Program = vsim
+# Id = "10.4d"
+# Version = "2015.12"
+# Date = "Dec 30 2015"
+# Platform = win32pe
+# Signature = 874ed53943f00d82c262b7eaf23d08ef
+# 0    0x00668c35: '<unknown (@0x668c35)>'
+# 1    0x0066ecce: '<unknown (@0x66ecce)>'
+# 2    0x0066f597: '<unknown (@0x66f597)>'
+# 3    0x006ef0ac: '<unknown (@0x6ef0ac)>'
+# 4    0x006f04ea: '<unknown (@0x6f04ea)>'
+# 5    0x0084d14f: '<unknown (@0x84d14f)>'
+# 6    0x0084d312: '<unknown (@0x84d312)>'
+# 7    0x0084d462: '<unknown (@0x84d462)>'
+# 8    0x1000cb1f: 'TclInvokeStringCommand + 0x8f' in 'c:\altera\16.0\modelsim_ase\win32aloem\tcl85.dll'
+# 9    0x100473b5: 'Tcl_ExprObj + 0x1605' in 'c:\altera\16.0\modelsim_ase\win32aloem\tcl85.dll'
+# 10   0x100462b5: 'Tcl_ExprObj + 0x505' in 'c:\altera\16.0\modelsim_ase\win32aloem\tcl85.dll'
+# 11   0x1000f6a9: 'TclEvalObjEx + 0x2f9' in 'c:\altera\16.0\modelsim_ase\win32aloem\tcl85.dll'
+# End of Stack Trace
+
+
