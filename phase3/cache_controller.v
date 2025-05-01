@@ -1,4 +1,4 @@
-module cache_controller();
+module cache_controller(clk,rst_n,miss_detected, memory_data_valid,miss_address,busy, write_data_array,write_tag_array,memory_address);
 
 input clk,rst_n,miss_detected, memory_data_valid;
 input [15:0] miss_address;

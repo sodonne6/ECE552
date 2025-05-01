@@ -33,6 +33,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire halting;//are we in a state of halting?
 	wire [3:0] shamtd,shamtq;//shift amount for shift operations
 	wire stall_if_id,pc_write,if_id_stall;
+	wire instructionValid,memvalid;//assert true if nxt_instruction is valid (fetching from mem)
+	wire cache_stall_f, cache_stall_d, cache_stall_x, cache_stall_m;//stall inputs for cache stalls
 	assign stall_if_id = if_id_stall;
 	//If I halt then the pc will keep loading the same halt operation untill finally the program stops
 	wire fALUin1,fALUin2;//assert 1 if ALU needs forwarding input
@@ -52,15 +54,18 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign dusesReg1 = ~((Opcode != 4'b1101)&(&Opcode));//all opcodes that don't read from a register
 	assign dusesReg2= dusesReg1 &(~DALUSrc)&(~Dlhb)&(~Dllb);//operation uses regesters, and also isn't using immediate
 
-	
-
+	assign memvalid = 1;// TODO change this
+	assign cache_stall_f = (~instructionValid)|(~memvalid);
+	assign cache_stall_d = ~memvalid;
+	assign cache_stall_x = ~memvalid;
+	assign cache_stall_m = ~memvalid;
 
 	hazard_detection_u hazard_detector(.MMRead(XMemtoReg),.Moutaddr(MWriteReg),.Dreg1((Dllb|Dlhb)?rd:rs),.Dreg2(rt),.reg1en(dusesReg1),
 		.reg2en(dusesReg2),.pc_write(pc_write),.if_id_stall(if_id_stall),.Xoutaddr(XWriteReg)
 		,.XWriteReg(XWriteReg),.BR(opcode==4'b1101),.MWriteReg(MRegWrite));	
 	IFID iIFID(
     	.clk(clk),
-    	.rst(rst|(Branch|BranchReg)),//reset if resetting or a branch operation
+    	.rst(rst|(Branch|BranchReg)|cache_stall_f),//reset if resetting or a branch operation
     	.nxt_instr(nxt_instr),  
     	.nxt_PC(pcp4),    
     	.en(~stall_if_id),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
@@ -69,7 +74,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	);
 	assign noopd = Branch|BranchReg;
 	IDEX iIDEX(
-    	.clk(clk),.rst(rst|stall_if_id),.en(~stall_if_id),         	//when low the pipeline stalls 
+    	.clk(clk),.rst(rst|stall_if_id|cache_stall_d),.en(~stall_if_id),         	//when low the pipeline stalls 
     	//inputs from the ID stage
 		.read_data_1_ID(DRReadData1),     //read data 1
     	.read_data_2_ID(DRReadData2),     //read data 2
@@ -99,7 +104,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 
 	EXMEM iEXMEM(
-        .clk(clk),.rst(rst),.en(1'b1), 
+        .clk(clk),.rst(rst|cache_stall_x),.en(1'b1), 
 		.ALU_Out(ALU_Out),//output of EX ALU
 		.ALU_In2(ALUin2),
 		.instr_EX(Xinstr),
@@ -121,7 +126,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.llbd(Xllb),.llbq(Mllb),.lhbd(Xlhb),.lhbq(Mlhb)//more WB signals
         );
 	MEMWB	iMEMWB(
-    .clk(clk),.rst(rst),.en(1'b1),
+    .clk(clk),.rst(rst|cache_stall_m),.en(1'b1),
 	.MD_Out(MReadData),//output of memory reading
 	.ALU_Out(MALU_Out),//output of alu
 
@@ -192,12 +197,13 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 	
 	assign pcInput = rst? 16'h0000:
+					cache_stall_f?pc:
 					Branch ? branchALUresult:
 					BranchReg? DRReadData1://is it a branch?
 					halting? pc//is the current F instruction a halt
 					:pcp4;
-	
-	memory1c_instr instructionMem(.data_out(nxt_instr), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
+	FICacheInterface FIcache(.addr(pc),.clk(clk),.rst(rst),.data(nxt_instr),.data_ready(instructionValid),.ren(1'b1));
+	//memory1c_instr instructionMem(.data_out(nxt_instr), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
 	assign highByteLoad ={Winstr[7:0],WRReadData2[7:0]};
 	assign lowByteLoad ={WRReadData2[15:8],Winstr[7:0]};
@@ -279,6 +285,6 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign DMemtoReg = DMemRead;
 	assign dataMemEn = MemWrite|MMemtoReg;
 	
-	memory1c dataMem(.data_out(MReadData), .data_in(write_data), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
-
+	//memory1c dataMem(.data_out(MReadData), .data_in(write_data), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
+	MDCacheInterface MDCinterface(.addr(MALU_Out),.clk(clk),.rst(rst),.data_in(write_data),.data_out(MReadData), .data_ready(memvalid),.wen(MemWrite),.ren(DMemRead));
 endmodule
