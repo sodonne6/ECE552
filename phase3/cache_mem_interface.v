@@ -27,7 +27,7 @@ assign wr = (state==DWRITE);
 assign n_state = ~done?state://if not done keep same state
     dwe? DWRITE://prioritize data writes, then reads, then instruction reads
     dre? DCACHE:
-    ire? ire:
+    ire? ICACHE:
     IDLE;
 
 assign n_addr = n_state == ICACHE? i_addr:d_addr;//the only case we need i_addr is ICACHE, so assume d_addr ow
