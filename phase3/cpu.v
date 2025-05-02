@@ -54,15 +54,14 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign dusesReg1 = ~((Opcode != 4'b1101)&(&Opcode));//all opcodes that don't read from a register
 	assign dusesReg2= dusesReg1 &(~DALUSrc)&(~Dlhb)&(~Dllb);//operation uses regesters, and also isn't using immediate
 
-	assign memvalid = 1;// TODO change this
-	assign cache_stall_f = (~instructionValid)|(~memvalid);
-	assign cache_stall_d = ~memvalid;
-	assign cache_stall_x = ~memvalid;
-	assign cache_stall_m = ~memvalid;
+	assign cache_stall_f = (~instructionValid)|((~memvalid)&DMemRead);
+	assign cache_stall_d = (~memvalid)&DMemRead;
+	assign cache_stall_x = (~memvalid)&DMemRead;
+	assign cache_stall_m = (~memvalid)&DMemRead;
 
 	hazard_detection_u hazard_detector(.MMRead(XMemtoReg),.Moutaddr(MWriteReg),.Dreg1((Dllb|Dlhb)?rd:rs),.Dreg2(rt),.reg1en(dusesReg1),
 		.reg2en(dusesReg2),.pc_write(pc_write),.if_id_stall(if_id_stall),.Xoutaddr(XWriteReg)
-		,.XWriteReg(XWriteReg),.BR(opcode==4'b1101),.MWriteReg(MRegWrite));	
+		,.XWriteReg(XWriteReg),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
 	IFID iIFID(
     	.clk(clk),
     	.rst(rst|(Branch|BranchReg)|cache_stall_f),//reset if resetting or a branch operation
@@ -159,9 +158,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 
 	//so I should put this in the registers between steps , but I don't feel like it
-	dff djl(.q(XjumpAndLink), .d(DjumpAndLink), .wen(pc_write), .clk(clk), .rst(rst));
-	dff xjl(.q(MjumpAndLink), .d(XjumpAndLink), .wen(pc_write), .clk(clk), .rst(rst));
-	dff mjl(.q(jumpAndLink), .d(MjumpAndLink), .wen(pc_write), .clk(clk), .rst(rst));
+	dff djl(.q(XjumpAndLink), .d(DjumpAndLink), .wen(pc_write&(~cache_stall_d)), .clk(clk), .rst(rst));
+	dff xjl(.q(MjumpAndLink), .d(XjumpAndLink), .wen(pc_write&(~cache_stall_x)), .clk(clk), .rst(rst));
+	dff mjl(.q(jumpAndLink), .d(MjumpAndLink), .wen(pc_write&(~cache_stall_m)), .clk(clk), .rst(rst));
 
 
 	//pc flip flop
@@ -202,7 +201,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 					BranchReg? DRReadData1://is it a branch?
 					halting? pc//is the current F instruction a halt
 					:pcp4;
-	FICacheInterface FIcache(.addr(pc),.clk(clk),.rst(rst),.data(nxt_instr),.data_ready(instructionValid),.ren(1'b1));
+	
 	//memory1c_instr instructionMem(.data_out(nxt_instr), .data_in(16'hxxxx), .addr(pc), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
 	
 	assign highByteLoad ={Winstr[7:0],WRReadData2[7:0]};
@@ -286,5 +285,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign dataMemEn = MemWrite|MMemtoReg;
 	
 	//memory1c dataMem(.data_out(MReadData), .data_in(write_data), .addr(MALU_Out), .enable(dataMemEn), .wr(MemWrite), .clk(clk), .rst(rst));
-	MDCacheInterface MDCinterface(.addr(MALU_Out),.clk(clk),.rst(rst),.data_in(write_data),.data_out(MReadData), .data_ready(memvalid),.wen(MemWrite),.ren(DMemRead));
+	//MDCacheInterface MDCinterface(.addr(MALU_Out),.clk(clk),.rst(rst),.data_in(write_data),.data_out(MReadData), .data_ready(memvalid),.wen(MemWrite),.ren(DMemRead));
+	//FICacheInterface FIcache(.addr(pc),.clk(clk),.rst(rst),.data(nxt_instr),.data_ready(instructionValid),.ren(1'b1));
+	
+	fake_cache icache(.maddr(),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(DMemRead),.mdata_out(MReadData),.mdata_ready(memvalid),
+		.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
 endmodule
