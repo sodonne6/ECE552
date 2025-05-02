@@ -5,9 +5,29 @@ module DCache(
     input rst_n,
     input [15:0] cpu_address,
     input [15:0] cpu_data_in,
-    input cpu_write_en, // 1 = write, 0 = read
+    input cpu_write_en, 
+
     output [15:0] cpu_data_out
     //will update w/ signals from cache controller
+            // Cache data array interface
+    input [15:0] cache_addr,
+    input cache_wr_en,
+    input [15:0] cache_data_in,
+    output [15:0] cache_data_out,
+    
+    // Cache meta-data array interface
+    input [7:0] meta_idx,
+    input meta_wr_en,
+    input meta_wr_way,
+    input [7:0] meta_tag_in,
+    input meta_valid_in,
+    output [7:0] meta_tag_out0,
+    output meta_valid_out0,
+    output [7:0] meta_tag_out1,
+    output meta_valid_out1,
+    input meta_lru_in,
+    output meta_lru_out,
+
 );
 
     // MetaDataArray signals
@@ -52,6 +72,9 @@ module DCache(
     wire valid_bit = 1'b1; // Always setting valid = 1 when filling for now
     wire lru_bit = way_select; // LRU: 0/1 depending on which way replaced
     assign meta_data_in = {tag, valid_bit, lru_bit};
+
+
+
 
     MetaDataArray meta_data_array (
         .clk(clk),

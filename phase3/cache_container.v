@@ -1,5 +1,5 @@
 //The module that contains all of the cache modules to instansiate.
-module cache_container();
+module cache_container(maddr,clk,rst,mdata_in,mwen,mren,mdata_out,mdata_ready,iaddr,iren,idata,idata_ready);
 
 
     input [15:0] maddr;//address to read/write to
@@ -21,24 +21,157 @@ module cache_container();
     wire mstall, istall;
     wire mem_access_req,mem_access_grant,inst_access_req,inst_access_grant;//who wants to access memory/who has permission
     wire data_valid,mem_wr_req,mem_rd_req;
+
+
+    wire [15:0] dcache_addr;
+    wire dcache_wr_en;
+    wire [15:0] dcache_data_in;
+    wire [15:0] dcache_data_out;
+
+    // Cache meta-data array interface
+    wire [7:0] dmeta_idx;
+    wire dmeta_wr_en;
+    wire dmeta_wr_way;
+    wire [7:0] dmeta_tag_in;
+    wire dmeta_valid_in;
+    wire [7:0] dmeta_tag_out0;
+    wire dmeta_valid_out0;
+    wire [7:0] dmeta_tag_out1;
+    wire dmeta_valid_out1;
+    wire dmeta_lru_in;
+    wire dmeta_lru_out;
+
+
+    wire [15:0] icache_addr;
+    wire icache_wr_en;
+    wire [15:0] icache_data_in;
+    wire [15:0] icache_data_out;
+
+    // Cache meta-data array interface
+    wire [7:0] imeta_idx;
+    wire imeta_wr_en;
+    wire imeta_wr_way;
+    wire [7:0] imeta_tag_in;
+    wire imeta_valid_in;
+    wire [7:0] imeta_tag_out0;
+    wire imeta_valid_out0;
+    wire [7:0] imeta_tag_out1;
+    wire imeta_valid_out1;
+    wire imeta_lru_in;
+    wire imeta_lru_out;
+
+
     assign mdata_ready = ~mstall;
     assign idata_ready = ~istall;
     // MDCacheInterface MDCI(.addr(maddr),.clk(clk),.rst(rst),.data_in(mdata_in),.data_out(mdata_out), .data_ready(mdata_ready),.wen(mwen),.ren(mren));
     // FICacheInterface FICI(.addr(iaddr),.clk(clk),.rst(rst),.data(idata),.data_ready(.idata_ready),.ren(iren));
 
-    DCache IC(
+
+
+     DCache IC(
         .clk(clk),
         .rst_n(~rst),
-        .cpu_address(),
-        .cpu_data_in(),
-        .cpu_write_en(), // 1 = write, 0 = read
-        .cpu_data_out(),
+        .cpu_address(iaddr),
+        .cpu_data_in(idata_out),
+        .cpu_write_en(1'b0), // 1 = write, 0 = read
+        .cpu_data_out(16'h00),
         //will update w/ signals from cache controller
-        .mem_we(1'b0),
-        .mem_re(imem_re),
-        .mem_addr(),
+                // Cache data array interface
+        .cache_addr(dcache_addr),
+        .cache_wr_en(dcache_wr_en),
+        .cache_data_in(dcache_data_in),
+        .cache_data_out(dcache_data_out),
+        
+        // Cache meta-data array interface
+        .meta_idx(dmeta_idx),
+        .meta_wr_en(dmeta_wr_en),
+        .meta_wr_way(dmeta_wr_en),
+        .meta_tag_in(dmeta_tag_in),
+        .meta_valid_in(dmeta_valid_in),
+        .meta_tag_out0(dmeta_tag_out0),
+        .meta_valid_out0(dmeta_tag_out0),
+        .meta_tag_out1(dmeta_tag_out1),
+        .meta_valid_out1(dmeta_valid_out1),
+        .meta_lru_in(dmeta_lru_in),
+        .meta_lru_out(dmeta_lru_out)
+
     );
-    cache_controller mControl(
+    DCache DC(
+
+        .clk(clk),
+        .rst_n(~rst),
+        .cpu_address(maddr),
+        .cpu_data_in(mdata_out),
+        .cpu_write_en(mwen), // 1 = write, 0 = read
+        .cpu_data_out(mdata_in),
+        //will update w/ signals from cache controller
+
+                // Cache data array interface
+        .cache_addr(dcache_addr),
+        .cache_wr_en(dcache_wr_en),
+        .cache_data_in(dcache_data_in),
+        .cache_data_out(dcache_data_out),
+        
+        // Cache meta-data array interface
+        .meta_idx(dmeta_idx),
+        .meta_wr_en(dmeta_wr_en),
+        .meta_wr_way(dmeta_wr_en),
+        .meta_tag_in(dmeta_tag_in),
+        .meta_valid_in(dmeta_valid_in),
+        .meta_tag_out0(dmeta_tag_out0),
+        .meta_valid_out0(dmeta_tag_out0),
+        .meta_tag_out1(dmeta_tag_out1),
+        .meta_valid_out1(dmeta_valid_out1),
+        .meta_lru_in(dmeta_lru_in),
+        .meta_lru_out(dmeta_lru_out)
+
+    );
+
+    cache_controller iControl(
+        // System signals
+        .clk(clk),
+        .rst_n(rst_n),
+        
+        // Processor interface
+        .addr(iaddr),
+        .rd_req(iren),
+        .wr_req(iwen),
+        .data_in(idata_in),
+        .data_out(idata_out),
+        .stall(istall),
+        
+        // Cache data array interface
+        .cache_addr(icache_addr),
+        .cache_wr_en(icache_wr_en),
+        .cache_data_in(icache_data_in),
+        .cache_data_out(icache_data_out),
+        
+        // Cache meta-data array interface
+        .meta_idx(imeta_idx),
+        .meta_wr_en(imeta_wr_en),
+        .meta_wr_way(imeta_wr_en),
+        .meta_tag_in(imeta_tag_in),
+        .meta_valid_in(imeta_valid_in),
+        .meta_tag_out0(imeta_tag_out0),
+        .meta_valid_out0(imeta_tag_out0),
+        .meta_tag_out1(imeta_tag_out1),
+        .meta_valid_out1(imeta_valid_out1),
+        .meta_lru_in(imeta_lru_in),
+        .meta_lru_out(imeta_lru_out),
+        
+        // Memory interface signals
+        .mem_addr(imem_addr),
+        .mem_rd_req(imem_wr_req),
+        .mem_wr_req(imem_wr_req),
+        .mem_data_out(idata_in),
+        .mem_data_in(idata_out),
+        .mem_data_valid(idata_valid),
+        
+        // Arbitration interface
+        .mem_access_req(imem_access_req),
+        .mem_access_grant(imem_access_grant)
+);
+    cache_controller dControl(
         // System signals
         .clk(clk),
         .rst_n(rst_n),
@@ -52,35 +185,35 @@ module cache_container();
         .stall(mstall),
         
         // Cache data array interface
-        output [15:0] cache_addr,
-        output cache_wr_en,
-        output [15:0] cache_data_in,
-        input [15:0] cache_data_out,
+        .cache_addr(dcache_addr),
+        .cache_wr_en(dcache_wr_en),
+        .cache_data_in(dcache_data_in),
+        .cache_data_out(dcache_data_out),
         
         // Cache meta-data array interface
-        output [7:0] meta_idx,
-        output meta_wr_en,
-        output meta_wr_way,
-        output [7:0] meta_tag_in,
-        output meta_valid_in,
-        input [7:0] meta_tag_out0,
-        input meta_valid_out0,
-        input [7:0] meta_tag_out1,
-        input meta_valid_out1,
-        output meta_lru_in,
-        input meta_lru_out,
+        .meta_idx(dmeta_idx),
+        .meta_wr_en(dmeta_wr_en),
+        .meta_wr_way(dmeta_wr_en),
+        .meta_tag_in(dmeta_tag_in),
+        .meta_valid_in(dmeta_valid_in),
+        .meta_tag_out0(dmeta_tag_out0),
+        .meta_valid_out0(dmeta_tag_out0),
+        .meta_tag_out1(dmeta_tag_out1),
+        .meta_valid_out1(dmeta_valid_out1),
+        .meta_lru_in(dmeta_lru_in),
+        .meta_lru_out(dmeta_lru_out),
         
         // Memory interface signals
         .mem_addr(dmem_addr),
-        .mem_rd_req(mem_wr_req),
-        .mem_wr_req(mem_wr_req),
-        .mem_data_out(data_in),
-        .mem_data_in(data_out),
-        .mem_data_valid(data_valid),
+        .mem_rd_req(dmem_wr_req),
+        .mem_wr_req(dmem_wr_req),
+        .mem_data_out(ddata_in),
+        .mem_data_in(ddata_out),
+        .mem_data_valid(ddata_valid),
         
         // Arbitration interface
-        .mem_access_req(mem_access_req),
-        .mem_access_grant(mem_access_grant)
+        .mem_access_req(dmem_access_req),
+        .mem_access_grant(dmem_access_grant)
 );
 
     // cache_controller ICC(clk,rst_n,miss_detected, memory_data_valid,miss_address,busy, write_data_array,write_tag_array,memory_address);
