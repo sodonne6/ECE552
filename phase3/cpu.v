@@ -61,7 +61,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 	hazard_detection_u hazard_detector(.MMRead(XMemtoReg),.Moutaddr(MWriteReg),.Dreg1((Dllb|Dlhb)?rd:rs),.Dreg2(rt),.reg1en(dusesReg1),
 		.reg2en(dusesReg2),.pc_write(pc_write),.if_id_stall(if_id_stall),.Xoutaddr(XWriteReg)
-		,.XWriteReg(XWriteReg),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
+		,.XWriteReg(XRegWrite),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
 	IFID iIFID(
     	.clk(clk),
     	.rst(rst|(Branch|BranchReg)|(cache_stall_f&~cache_stall_d)),//reset if resetting or a branch operation
@@ -287,6 +287,10 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	//MDCacheInterface MDCinterface(.addr(MALU_Out),.clk(clk),.rst(rst),.data_in(write_data),.data_out(MReadData), .data_ready(memvalid),.wen(MemWrite),.ren(DMemRead));
 	//FICacheInterface FIcache(.addr(pc),.clk(clk),.rst(rst),.data(nxt_instr),.data_ready(instructionValid),.ren(1'b1));
 	
-	fake_cache icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
+	//fake_cache icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
+		//.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
+
+	//cache_container icache(maddr,clk,rst,mdata_in,mwen,mren,mdata_out,mdata_ready,iaddr,iren,idata,idata_ready);
+	cache_container icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
 		.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
 endmodule

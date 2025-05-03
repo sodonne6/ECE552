@@ -34,6 +34,8 @@ assign n_addr = n_state == ICACHE? i_addr:d_addr;//the only case we need i_addr 
 
 dff addr_ff[15:0](.q(addr),.d(n_addr),.wen(1'b1),.clk(clk),.rst(rst));
 dff stateff[1:0](.q(state), .d(n_state), .wen(1'b1), .clk(clk), .rst(rst));
+assign i_data_out= data_out;
+assign d_data_out = data_out;
 memory4c mem(.data_out(data_out), .data_in(d_data_in), .addr(addr), .enable((state != IDLE)), .wr(wr), .clk(clk), .rst(rst), .data_valid(data_valid));
 
 

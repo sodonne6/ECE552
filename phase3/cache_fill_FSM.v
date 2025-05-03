@@ -8,7 +8,8 @@ module cache_fill_FSM(
     output memory_read_en, //one read signal for the memory
     output write_data_array,
     output write_tag_array,
-    output [15:0] memory_address
+    output [15:0] memory_address,
+    output [3:0]  response_count
 );
 
     //state logic -> store curr state and next state in a flop in order to transition when needded 
@@ -46,7 +47,7 @@ module cache_fill_FSM(
         .B(4'b0000),
         .Cin(1'b1),
         .Sum(word_cnt_inc),
-        .Ovfl(), .PG(), .GG() //unused outputs -> keep unconnected
+        .Ovfl(), .PG(), .GG(),.Cout()//unused outputs -> keep unconnected
     );
 
     //if in WAIT state and memory returns a word -> increment -> if not keep current count val
@@ -55,7 +56,7 @@ module cache_fill_FSM(
     //repsonse timer -> increments when data valid is high
     //detect when 8th word arrives
 
-    wire [3:0] response_count, response_count_next;
+    wire [3:0]  response_count_next;//,response_count;
     wire response_last = (response_count[2:0] == 3'b111);
     wire response_count_en = memory_data_valid & ~response_last;
 
@@ -70,7 +71,7 @@ module cache_fill_FSM(
         .B(4'b0000),
         .Cin(1'b1),
         .Sum(response_count_next),
-        .Ovfl(), .PG(), .GG() //unused outputs -> keep unconnected
+        .Ovfl(), .PG(), .GG(),.Cout() //unused outputs -> keep unconnected
     );
     //tag + index + word count and lsb is 0 for word alignment
     assign memory_address = {miss_address[15:4],word_cnt[2:0],1'b0};
