@@ -41,6 +41,6 @@ module fake_cache(maddr,clk,rst,mdata_in,mwen,mren,mdata_out,mdata_ready,iaddr,i
     assign mdata_ready = (count==6);
 
     memory1c_instr dataMem(.data_out(idata), .data_in(16'hxxxx), .addr(iaddr), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
-    memory1c_instr instructionMem(.data_out(mdata_out), .data_in(mdata_in), .addr(maddr), .enable(1'b1), .wr(1'b0), .clk(clk), .rst(rst));
+    memory1c_instr instructionMem(.data_out(mdata_out), .data_in(mdata_in), .addr(maddr), .enable(1'b1), .wr(mwen), .clk(clk), .rst(rst));
 
 endmodule

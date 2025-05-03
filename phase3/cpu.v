@@ -64,16 +64,16 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		,.XWriteReg(XWriteReg),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
 	IFID iIFID(
     	.clk(clk),
-    	.rst(rst|(Branch|BranchReg)|cache_stall_f),//reset if resetting or a branch operation
+    	.rst(rst|(Branch|BranchReg)|(cache_stall_f&~cache_stall_d)),//reset if resetting or a branch operation
     	.nxt_instr(nxt_instr),  
     	.nxt_PC(pcp4),    
-    	.en(~stall_if_id),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
+    	.en(~stall_if_id&(~cache_stall_d)),         //assert to let pipeline know to keep going -> when low the pipeline stalls 
     	.instr_ID(instruction),   
     	.PC_ID(pcp4_id)       
 	);
 	assign noopd = Branch|BranchReg;
 	IDEX iIDEX(
-    	.clk(clk),.rst(rst|stall_if_id|cache_stall_d),.en(~stall_if_id),         	//when low the pipeline stalls 
+    	.clk(clk),.rst(rst|stall_if_id|(cache_stall_d&~cache_stall_x)),.en(~stall_if_id&(~cache_stall_x)),         	//when low the pipeline stalls 
     	//inputs from the ID stage
 		.read_data_1_ID(DRReadData1),     //read data 1
     	.read_data_2_ID(DRReadData2),     //read data 2
@@ -103,7 +103,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 
 	EXMEM iEXMEM(
-        .clk(clk),.rst(rst|cache_stall_x),.en(1'b1), 
+        .clk(clk),.rst(rst|(cache_stall_x&~cache_stall_m)),.en(~cache_stall_m), 
 		.ALU_Out(ALU_Out),//output of EX ALU
 		.ALU_In2(ALUin2),
 		.instr_EX(Xinstr),
@@ -125,7 +125,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		.llbd(Xllb),.llbq(Mllb),.lhbd(Xlhb),.lhbq(Mlhb)//more WB signals
         );
 	MEMWB	iMEMWB(
-    .clk(clk),.rst(rst|cache_stall_m),.en(1'b1),
+    .clk(clk),.rst(rst|(cache_stall_m)),.en(1'b1),
 	.MD_Out(MReadData),//output of memory reading
 	.ALU_Out(MALU_Out),//output of alu
 
@@ -158,10 +158,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 
 
 	//so I should put this in the registers between steps , but I don't feel like it
-	dff djl(.q(XjumpAndLink), .d(DjumpAndLink), .wen(pc_write&(~cache_stall_d)), .clk(clk), .rst(rst));
-	dff xjl(.q(MjumpAndLink), .d(XjumpAndLink), .wen(pc_write&(~cache_stall_x)), .clk(clk), .rst(rst));
-	dff mjl(.q(jumpAndLink), .d(MjumpAndLink), .wen(pc_write&(~cache_stall_m)), .clk(clk), .rst(rst));
-
+	dff djl(.q(XjumpAndLink), .d(DjumpAndLink), .wen(pc_write&~stall_if_id&(~cache_stall_x)), .clk(clk), .rst(rst|stall_if_id|(cache_stall_d&~cache_stall_x)));
+	dff xjl(.q(MjumpAndLink), .d(XjumpAndLink), .wen(pc_write&(~cache_stall_m)), .clk(clk), .rst(rst|(cache_stall_x&~cache_stall_m)));
+	dff mjl(.q(jumpAndLink), .d(MjumpAndLink), .wen(pc_write), .clk(clk), .rst(rst|cache_stall_m));
 
 	//pc flip flop
 	
@@ -288,6 +287,6 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	//MDCacheInterface MDCinterface(.addr(MALU_Out),.clk(clk),.rst(rst),.data_in(write_data),.data_out(MReadData), .data_ready(memvalid),.wen(MemWrite),.ren(DMemRead));
 	//FICacheInterface FIcache(.addr(pc),.clk(clk),.rst(rst),.data(nxt_instr),.data_ready(instructionValid),.ren(1'b1));
 	
-	fake_cache icache(.maddr(),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(DMemRead),.mdata_out(MReadData),.mdata_ready(memvalid),
+	fake_cache icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
 		.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
 endmodule
