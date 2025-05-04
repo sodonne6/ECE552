@@ -17,7 +17,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire [3:0] Opcode, rd,rs,rt;//where rt could be immediate
 	wire[3:0] WriteReg,DWriteReg, XWriteReg, MWriteReg;//what register to write to
 	wire z,n,v,z_q,n_q,v_q;//ALU flags
-	wire [15:0] pcp4, pcInput, branchALUresult;//pc +4, pc Input for pc flip flop, result after branch
+	wire [15:0] pcp4, pcInput, branchALUresult,pc_next;//pc +4, pc Input for pc flip flop, result after branch
 	wire ovflpc,ovflpc2;
 	wire llb, lhb;
 	wire [3:0] cusrcReg1,cusrcReg2;//control unit signals for register file inputs
@@ -49,7 +49,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire i_good,n_i_good;//have unused instruction
 	wire [15:0]held_instruction;//holds instruction fetched untill next instruction fetched
 	wire [15:0]got_instruction;//instruction received from cache
-
+	wire corrupted;//nxt_instr is bad, keep sending garbage
 
 	assign ireq = (~i_good)|(~n_i_good);
 	assign write_data = fMEMin? fMEMin_reg: MRReadData2;
@@ -66,8 +66,9 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign cache_stall_x = (~memvalid)&(MemWrite|MMemtoReg);
 	assign cache_stall_m = (~memvalid)&(MemWrite|MMemtoReg);
 	dff  cache_instff[15:0](.d(got_instruction),.q(held_instruction),.clk(clk),.wen(instructionValid),.rst(rst));
+	dff corrupt_ff(.d((Branch|BranchReg)),.q(corrupted),.clk(clk),.wen(1'b1),.rst(rst|n_i_good));
 	assign n_i_good=(~(Branch|BranchReg))&((instructionValid)|(i_good&(~(cache_stall_f|stall_if_id))));
-	dff igood_ff(.d(n_i_good),.q(i_good),.wen(1'b1),.rst(rst),.clk(clk));//is the current instruction applicable
+	dff igood_ff(.d(n_i_good),.q(i_good),.wen(1'b1),.rst(rst|corrupted),.clk(clk));//is the current instruction applicable
 	hazard_detection_u hazard_detector(.MMRead(XMemtoReg),.Moutaddr(MWriteReg),.Dreg1((Dllb|Dlhb)?rd:rs),.Dreg2(rt),.reg1en(dusesReg1),
 		.reg2en(dusesReg2),.pc_write(pc_write),.if_id_stall(if_id_stall),.Xoutaddr(XWriteReg)
 		,.XWriteReg(XRegWrite),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
@@ -172,8 +173,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	dff mjl(.q(jumpAndLink), .d(MjumpAndLink), .wen(pc_write), .clk(clk), .rst(rst|cache_stall_m));
 
 	//pc flip flop
-	
-	dff pcReg[15:0](.q(pc), .d(pcInput), .wen(pc_write), .clk(clk), .rst(rst));
+	dff pcnext[15:0](.q(pc_next),.d(pcInput),.clk(clk),.rst(rst),.wen(((~cache_stall_f)&(~corrupted))|(Branch|BranchReg)));
+	dff pcReg[15:0](.q(pc), .d(pc_next), .wen(pc_write|(Branch|BranchReg)), .clk(clk), .rst(rst));
 	
 	dff cycleff(.q(cycle),.d(1'b1),.clk(clk),.wen(1'b1),.rst(~rst_n));
 	dff rstff(.q(cycle2),.d(cycle|rst_n),.rst(1'b0),.wen(1'b1),.clk(clk));
@@ -204,7 +205,7 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 		);
 	
 	assign pcInput = rst? 16'h0000:
-					cache_stall_f?pc:
+					//cache_stall_f?pc:
 					Branch ? branchALUresult:
 					BranchReg? DRReadData1://is it a branch?
 					halting? pc//is the current F instruction a halt
@@ -298,7 +299,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	//fake_cache icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
 		//.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
-	assign nxt_instr = instructionValid? got_instruction:held_instruction;
+	assign nxt_instr = corrupted? 16'h0000
+	:(instructionValid? got_instruction:held_instruction);
 	//cache_container icache(maddr,clk,rst,mdata_in,mwen,mren,mdata_out,mdata_ready,iaddr,iren,idata,idata_ready);
 	cache_container icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg|MemWrite),.mdata_out(MReadData),.mdata_ready(memvalid),
 		.iaddr(pc),.iren(ireq),.idata(got_instruction),.idata_ready(instructionValid));

@@ -90,9 +90,9 @@ module control_unit (
     assign uncond_cond = 1'b1;
     
 	//Check to see what flags to set
-	assign c_n = isADD|isSUB;
-	assign c_v = isADD|isSUB;
-	assign c_z = isADD|isSUB|isXOR|isSLL|isSRA|isROR;
+	assign c_n = (instr!=16'h0000)&(isADD|isSUB);
+	assign c_v = (instr!=16'h0000)&(isADD|isSUB);
+	assign c_z = (instr!=16'h0000)&(isADD|isSUB|isXOR|isSLL|isSRA|isROR);
 	
 	
     // branch condition multiplexer
