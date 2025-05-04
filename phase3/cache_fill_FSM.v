@@ -9,9 +9,10 @@ module cache_fill_FSM(
     output write_data_array,
     output write_tag_array,
     output [15:0] memory_address,
-    output [3:0]  response_count
+    output [2:0]  response_countp
 );
-
+    wire [3:0] response_count;
+    assign response_countp = response_count[2:0];
     //state logic -> store curr state and next state in a flop in order to transition when needded 
     wire curr_state, next_state; //IDLE = 0 AND WAIT = 1
     dff state_ff(.clk(clk), .rst(~rst_n), .q(curr_state), .d(next_state), .wen(1'b1));

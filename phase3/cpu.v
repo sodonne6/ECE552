@@ -45,6 +45,13 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	wire dusesReg1,dusesReg2;
 	wire c_zq,c_vq,c_nq;
 	wire DjumpAndLink, XjumpAndLink, MjumpAndLink;
+	wire ireq;//are we requesting an instruction
+	wire i_good,n_i_good;//have unused instruction
+	wire [15:0]held_instruction;//holds instruction fetched untill next instruction fetched
+	wire [15:0]got_instruction;//instruction received from cache
+
+
+	assign ireq = (~i_good)|(~n_i_good);
 	assign write_data = fMEMin? fMEMin_reg: MRReadData2;
 	dff df3233(.d(c_z),.q(c_zq),.wen(1'b1),.rst(rst),.clk(clk));
 	dff df3gf233(.d(c_n),.q(c_nq),.wen(1'b1),.rst(rst),.clk(clk));
@@ -54,11 +61,13 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	assign dusesReg1 = ~((Opcode != 4'b1101)&(&Opcode));//all opcodes that don't read from a register
 	assign dusesReg2= dusesReg1 &(~DALUSrc)&(~Dlhb)&(~Dllb);//operation uses regesters, and also isn't using immediate
 
-	assign cache_stall_f = (~instructionValid)|((~memvalid)&DMemRead);
-	assign cache_stall_d = (~memvalid)&DMemRead;
-	assign cache_stall_x = (~memvalid)&DMemRead;
-	assign cache_stall_m = (~memvalid)&DMemRead;
-
+	assign cache_stall_f = (~instructionValid)|((~memvalid)&(MemWrite|MMemtoReg));
+	assign cache_stall_d = (~memvalid)&(MemWrite|MMemtoReg);
+	assign cache_stall_x = (~memvalid)&(MemWrite|MMemtoReg);
+	assign cache_stall_m = (~memvalid)&(MemWrite|MMemtoReg);
+	dff  cache_instff[15:0](.d(got_instruction),.q(held_instruction),.clk(clk),.wen(instructionValid),.rst(rst));
+	assign n_i_good=(~(Branch|BranchReg))&((instructionValid)|(i_good&(~(cache_stall_f|stall_if_id))));
+	dff igood_ff(.d(n_i_good),.q(i_good),.wen(1'b1),.rst(rst),.clk(clk));//is the current instruction applicable
 	hazard_detection_u hazard_detector(.MMRead(XMemtoReg),.Moutaddr(MWriteReg),.Dreg1((Dllb|Dlhb)?rd:rs),.Dreg2(rt),.reg1en(dusesReg1),
 		.reg2en(dusesReg2),.pc_write(pc_write),.if_id_stall(if_id_stall),.Xoutaddr(XWriteReg)
 		,.XWriteReg(XRegWrite),.BR(Opcode==4'b1101),.MWriteReg(MRegWrite));	
@@ -289,8 +298,8 @@ module cpu(input clk, input rst_n, output hlt,output [15:0]pc);
 	
 	//fake_cache icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
 		//.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
-
+	assign nxt_instr = instructionValid? got_instruction:held_instruction;
 	//cache_container icache(maddr,clk,rst,mdata_in,mwen,mren,mdata_out,mdata_ready,iaddr,iren,idata,idata_ready);
-	cache_container icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg),.mdata_out(MReadData),.mdata_ready(memvalid),
-		.iaddr(pc),.iren(1'b1),.idata(nxt_instr),.idata_ready(instructionValid));
+	cache_container icache(.maddr(MALU_Out),.clk(clk),.rst(rst),.mdata_in(write_data),.mwen(MemWrite),.mren(MMemtoReg|MemWrite),.mdata_out(MReadData),.mdata_ready(memvalid),
+		.iaddr(pc),.iren(ireq),.idata(got_instruction),.idata_ready(instructionValid));
 endmodule

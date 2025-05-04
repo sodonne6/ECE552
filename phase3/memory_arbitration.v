@@ -23,7 +23,7 @@ module memory_arbitration(
     reg current_grant_to_icache;
     
     // Grant signals
-    assign icache_grant = icache_req & (state == IDLE | (state == BUSY & current_grant_to_icache));
+    assign icache_grant = icache_req & ((state == IDLE&(~dcache_req)) | (state == BUSY & current_grant_to_icache));
     assign dcache_grant = dcache_req & (state == IDLE | (state == BUSY & ~current_grant_to_icache));
     
     // Arbitration FSM

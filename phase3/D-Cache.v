@@ -20,8 +20,10 @@ module DCache(
     input [15:0] memory_data_in,
     output[15:0] memory_data_out,
     output memory_read_en,
-    output[15:0] memory_address
-    
+    output[15:0] memory_address,
+    output memory_write_en,
+    output mem_req,
+    input mem_grant
     // Cache meta-data array interface
     // input [7:0] meta_idx,
     // input meta_wr_en,
@@ -36,7 +38,7 @@ module DCache(
     // output meta_lru_out
 
 );
-
+    assign memory_data_out = cpu_data_in;
     // MetaDataArray signals
     wire [7:0] meta_data_in;
     wire meta_write_enable;
@@ -70,23 +72,32 @@ module DCache(
     wire found, n_found;//is there a match, if not we need to go to overwrite
 
     wire miss_detected,fsm_busy,match;
-    wire [3:0] response_count;
+    wire [2:0] response_count;
 
     wire meta_lru_out;
     wire[5:0] tag_out;
     wire valid_out;
+    wire stall;//stall if need to write but dont have access
 
     assign index = cpu_address[9:4];
     assign block_offset = cpu_address[3:1];
     assign offset = cpu_address[3:0];
     assign tag = cpu_address[15:10];
+	wire prevway;
+wire [15:0] cpu_data_out_nxt;
 wire FSM_write_data;
 wire FSM_write_tag;
-    assign miss_detected = ((state== WAY1)&(n_state== WRITEDATA))|(state == WRITEDATA);
+wire fsm_started;
+
+dff sttartff(.d(fsm_busy|fsm_started),.q(fsm_started),.wen(1'b1),.rst(rst|(state!=WRITEDATA)),.clk(clk));
+wire[6:0] block_shift_old;
+    assign miss_detected = ((n_state== WRITEDATA))|(state == WRITEDATA&(~fsm_started));
+
+
 cache_fill_FSM FSM(
     .clk(clk),
     .rst_n(~rst),
-    .miss_detected(miss_detected),
+    .miss_detected(miss_detected&mem_grant),
     .memory_data_valid(memory_data_valid),
     .miss_address(miss_address),
     .fsm_busy(fsm_busy),
@@ -94,8 +105,11 @@ cache_fill_FSM FSM(
     .write_data_array(FSM_write_data),
     .write_tag_array(FSM_write_tag),
     .memory_address(memory_address),
-    .response_count(response_count)
+    .response_countp(response_count)
     );
+    
+
+
     assign miss_address = {cpu_address[15:4],4'h0};
     // Way selection (for now assume way 0, placeholder)
     wire way_select;
@@ -103,8 +117,8 @@ cache_fill_FSM FSM(
     assign searching = (state == WAY0)|(n_state == WAY0);
     dff foundff(.d(n_found),.q(found),.rst(rst),.wen(1'b1),.clk(clk));
     dff victimff(.d(n_victim_way),.q(victim_way),.rst(rst),.wen(1'b1),.clk(clk));
-    assign n_found = (n_state==WAY0)? match:
-                (n_state == WAY1) ? match&found:
+    assign n_found = (state==IDLE)? ((cpu_read_en|cpu_write_en)?match:1'b0):
+                (state == WAY0) ? match|found:
                 found;
     assign n_victim_way = (n_state== WAY0)? (meta_lru_out?victim_way:1'b0)://if checking way 0
     (state== WAY0)?(meta_lru_out?victim_way:1'b1) ://check to see if way 1 is LRU
@@ -113,22 +127,25 @@ cache_fill_FSM FSM(
 
 
     dff stateff[1:0](.d(n_state),.q(state),.clk(clk),.rst(rst),.wen(1'b1));
-    assign n_state = (state== WAY0)? WAY1:
-                    (state==WAY1)? (found?IDLE:WRITEDATA):
-                    (state== IDLE)? (cpu_read_en? WAY0:IDLE):
-                    (fsm_busy)?WRITEDATA:IDLE;//TODO: add write state
+    assign n_state =    stall? state: 
+                    (state== WAY0)? (n_found?IDLE:WAY1):
+                    (state==WAY1)? (n_found?IDLE:WRITEDATA):
+                    (state== IDLE)? ((cpu_read_en|cpu_write_en)? WAY0:IDLE):
+                    (fsm_busy|(~fsm_started))?WRITEDATA:IDLE;//TODO: add write state
 
     assign way_select = (state==WAY0) ? 1'b1:1'b0;//if just finished with way 1 go to way 0,
+    dff pwff(.d(way_select),.q(prevway),.wen(1'b1),.clk(clk),.rst(rst));//previous way, used to read datablocks
     //otherwise continue at way 1
 
     // Block Enable generation (2 ways × 64 sets = 128 entries)
     wire [127:0] block_enable;
     assign block_enable =   1 <<{index,way_select}; 
+    //dff bo [6:0](.q(block_shift_old),.d({index,way_select}),.wen(1'b1),.rst(rst),.clk(clk));
     //(way_select) ? (128'b1 << (index + 64)) : (128'b1 << index);
     //uses 'illegal' operators. Will fix later
 
     assign meta_block_enable = 1<<((state == WAY1)? {index,victim_way}:{index,way_select});//block_enable;
-    assign data_block_enable = block_enable;
+    assign data_block_enable = 1 <<((state == WRITEDATA)? {index,victim_way}:{index,~found});
 
     // Word Enable generation (8 possible 2-byte words inside block)
     assign word_enable = {7'h00,(cpu_write_en|cpu_read_en)} << ((state == WRITEDATA)?response_count:block_offset);
@@ -147,12 +164,19 @@ cache_fill_FSM FSM(
     assign {tag_out,valid_out,meta_lru_out} = meta_data_out;
 
 
-    assign match = valid_out &(tag_out == tag);//Found correct tag
+    assign match = valid_out &(tag_out == tag)&(searching);//Found correct tag
+    //dff cpu_outff[15:0](.d(cpu_data_out_nxt),.q(cpu_data_out),.wen(1'b1),.rst(rst),.clk(clk));
     assign cpu_data_out = data_array_out;
-    assign cpu_data_valid = cpu_temp;
+    assign cpu_data_valid = n_found;//cpu_temp;
     dff validff(.d(cpu_data_valid_d),.q(cpu_temp),.rst(rst),.clk(clk),.wen(1'b1));
-    assign cpu_data_valid_d = match & (~data_write_enable)&(cpu_read_en);//correct data is about to be read
 
+    assign mem_req = ((n_found&(state==WAY0))&(cpu_write_en))|(miss_detected);
+    assign stall = mem_req&((n_found&(state==WAY0))&(cpu_write_en))&(~mem_grant);
+
+    
+    assign cpu_data_valid_d = (~stall)&match &(cpu_read_en|cpu_write_en);//correct data is about to be read
+
+    assign memory_write_en = cpu_data_valid_d&cpu_write_en;
 
 
 
@@ -178,8 +202,8 @@ cache_fill_FSM FSM(
 
 
     // Default control behavior for now
-    assign data_array_in = memory_data_in;//cpu_data_in; // Write data from CPU to cache/memory
-    assign data_write_enable = ((state==WRITEDATA)&FSM_write_data)|(match&searching); 
+    assign data_array_in =  (cpu_data_valid&cpu_write_en)?  cpu_data_in:memory_data_in;//cpu_data_in; // Write data from CPU to cache/memory
+    assign data_write_enable = ((state==WRITEDATA)&FSM_write_data)|(cpu_data_valid&cpu_write_en);//|(match&searching); 
     assign meta_write_enable = searching|((state==WAY1)&(n_state==WRITEDATA));
 
 
