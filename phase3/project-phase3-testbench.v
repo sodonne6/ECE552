@@ -197,7 +197,7 @@ module cpu_ptb();
    assign MemDataIn = DUT.icache.CMI.mem.data_in;//DUT.MALUIn2;//DUT.p0.data2out;
    // If there's a memory write in this cycle, this is the Data being written to memory (16 bits)
    
-   assign MemDataOut = DUT.MReadData;//DUT.p0.readData;
+   assign MemDataOut =  DUT.icache.CMI.mem.data_out_4;//DUT.p0.readData;
    // If there's a memory read in this cycle, this is the data being read out of memory (16 bits)
 
    assign ICacheReq = DUT.ireq;//DUT.p0.icr;
